@@ -1,180 +1,399 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/constants/theme';
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
+const COLORS = {
+  primary: '#FF5733',
+  secondary: '#F59E0B',
+  tertiary: '#0D9488',
+  neutral: '#1E293B',
+  border: '#E2E8F0',
+};
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
+const FILTERS = ['Tümü', 'Yüksek Puanlar (4.5+)', 'Ücretsiz Giriş'];
+
+const QUICK_CATEGORIES = [
+  { id: 'q0', label: 'Senin İçin', emoji: '✨' },
+  { id: 'q1', label: 'Galata', emoji: '🗼' },
+  { id: 'q2', label: 'Boğaz Keyfi', emoji: '⛴️' },
+  { id: 'q3', label: 'Kadıköy', emoji: '🎨' },
+  { id: 'q4', label: 'Adalar', emoji: '🏝️' },
+];
+
+const SAMPLE_LOCATIONS = [
+  {
+    id: '1',
+    name: 'Karaköy Güllüoğlu',
+    category: 'Kahve & Tatlı',
+    rating: 4.8,
+    description: 'Boğaz manzaralı, tarihi bir baklava ve kahve durağı.',
+    emoji: '☕️',
+  },
+  {
+    id: '2',
+    name: 'Balat Sokakları',
+    category: 'Gezi & Fotoğraf',
+    rating: 4.9,
+    description: 'Renkli evleriyle ünlü, yürüyerek keşfedilecek tarihi mahalle.',
+    emoji: '📸',
+  },
+  {
+    id: '3',
+    name: 'Moda Sahili',
+    category: 'Deniz Kenarı',
+    rating: 4.7,
+    description: 'Gün batımını izlemek için sakin bir buluşma noktası.',
+    emoji: '🌅',
+  },
+  {
+    id: '4',
+    name: 'Kadıköy Çarşı',
+    category: 'Yeme & İçme',
+    rating: 4.6,
+    description: 'Sokak lezzetleri ve canlı gece hayatıyla dolu bir bölge.',
+    emoji: '🍢',
+  },
+];
+
+export default function ExploreScreen() {
+  const [activeFilter, setActiveFilter] = useState('Tümü');
+  const [search, setSearch] = useState('');
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
-
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
-
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <FlatList
+          data={SAMPLE_LOCATIONS}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            <>
+              <ThemedText type="title" style={styles.title}>
+                Şehri Keşfet
               </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
 
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+              <View style={styles.searchBar}>
+                <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Mekan, rota veya sanat ara..."
+                  placeholderTextColor="#94A3B8"
+                  value={search}
+                  onChangeText={setSearch}
+                />
+              </View>
 
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+              <View style={styles.filterRow}>
+                {FILTERS.map((filter) => {
+                  const isActive = filter === activeFilter;
+                  return (
+                    <Pressable
+                      key={filter}
+                      onPress={() => setActiveFilter(filter)}
+                      style={[
+                        styles.filterChip,
+                        isActive && styles.filterChipActive,
+                      ]}
+                    >
+                      <ThemedText
+                        style={[
+                          styles.filterText,
+                          isActive && styles.filterTextActive,
+                        ]}
+                      >
+                        {filter}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.avatarScroll}
+                contentContainerStyle={styles.avatarScrollContent}
+              >
+                {QUICK_CATEGORIES.map((item) => (
+                  <View key={item.id} style={styles.avatarItem}>
+                    <View style={styles.avatarCircle}>
+                      <ThemedText style={styles.avatarEmoji}>
+                        {item.emoji}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={styles.avatarLabel}>
+                      {item.label}
+                    </ThemedText>
+                  </View>
+                ))}
+              </ScrollView>
+
+              <View style={styles.sponsoredCard}>
+                <View style={styles.sponsoredBadge}>
+                  <ThemedText style={styles.sponsoredBadgeText}>
+                    SPONSORLU KEŞİF
+                  </ThemedText>
+                </View>
+                <ThemedText type="defaultSemiBold" style={styles.sponsoredTitle}>
+                  The Grand Tarabya — Kıyı Yürüyüşü
+                </ThemedText>
+                <ThemedText style={styles.sponsoredDescription}>
+                  Boğaz'ın en taze esintisinde zengin serpme kahvaltı ile
+                  başlayan keyifli yürüyüş.
+                </ThemedText>
+                <View style={styles.sponsoredTagsRow}>
+                  <View style={styles.sponsoredTag}>
+                    <ThemedText style={styles.sponsoredTagText}>
+                      2x Puan (150 XP)
+                    </ThemedText>
+                  </View>
+                  <View style={styles.sponsoredTag}>
+                    <ThemedText style={styles.sponsoredTagText}>
+                      %15 Çift İndirimi
+                    </ThemedText>
+                  </View>
+                </View>
+                <Pressable style={styles.sponsoredButton}>
+                  <ThemedText style={styles.sponsoredButtonText}>
+                    Rotayı İncele & Check-in Başlat
+                  </ThemedText>
+                </Pressable>
+              </View>
+
+              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+                Öne Çıkan Popüler Mekanlar
+              </ThemedText>
+            </>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardImage}>
+                <ThemedText style={styles.cardEmoji}>{item.emoji}</ThemedText>
+              </View>
+              <View style={styles.cardContent}>
+                <View style={styles.cardHeaderRow}>
+                  <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
+                  <View style={styles.ratingBadge}>
+                    <ThemedText style={styles.ratingText}>
+                      ⭐ {item.rating}
+                    </ThemedText>
+                  </View>
+                </View>
+                <View style={styles.categoryTag}>
+                  <ThemedText style={styles.categoryText}>
+                    {item.category}
+                  </ThemedText>
+                </View>
+                <ThemedText type="small">{item.description}</ThemedText>
+              </View>
+            </View>
+          )}
+        />
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  container: {
     flex: 1,
   },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
+  safeArea: {
+    flex: 1,
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
+    paddingTop: Spacing.four,
   },
-  centerText: {
+  title: {
+    marginBottom: Spacing.three,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: Spacing.three,
+    gap: 8,
+  },
+  searchIcon: {
+    fontSize: 16,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: Spacing.three,
+  },
+  filterChip: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterText: {
+    fontSize: 13,
+  },
+  filterTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  avatarScroll: {
+    marginBottom: Spacing.three,
+  },
+  avatarScrollContent: {
+    gap: 16,
+    paddingRight: Spacing.four,
+  },
+  avatarItem: {
+    alignItems: 'center',
+    width: 64,
+  },
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFE4D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  avatarEmoji: {
+    fontSize: 24,
+  },
+  avatarLabel: {
+    fontSize: 11,
     textAlign: 'center',
   },
-  pressed: {
-    opacity: 0.7,
+  sponsoredCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    padding: Spacing.four,
+    marginBottom: Spacing.four,
+    gap: 8,
   },
-  linkButton: {
+  sponsoredBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  sponsoredBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  sponsoredTitle: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  sponsoredDescription: {
+    color: '#FFE4D6',
+    fontSize: 13,
+  },
+  sponsoredTagsRow: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
+    gap: 8,
+    marginTop: 4,
+  },
+  sponsoredTag: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  sponsoredTagText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  sponsoredButton: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  sponsoredButtonText: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  sectionTitle: {
+    marginBottom: Spacing.three,
+  },
+  list: {
+    gap: Spacing.three,
+    paddingBottom: Spacing.four,
+  },
+  card: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  cardImage: {
+    width: 90,
+    backgroundColor: COLORS.secondary,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
+  },
+  cardEmoji: {
+    fontSize: 32,
+  },
+  cardContent: {
+    flex: 1,
+    padding: Spacing.three,
+    gap: 6,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
+  ratingBadge: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  collapsibleContent: {
-    alignItems: 'center',
+  ratingText: {
+    fontSize: 12,
+    color: '#92400E',
   },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
+  categoryTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#CCFBF1',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
+  categoryText: {
+    fontSize: 11,
+    color: COLORS.tertiary,
+    fontWeight: '600',
   },
 });
