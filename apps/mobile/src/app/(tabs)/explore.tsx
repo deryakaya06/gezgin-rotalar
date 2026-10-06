@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -8,10 +8,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { collection, getDocs } from 'firebase/firestore';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { db } from '@/firebase';
 
 const COLORS = {
   primary: '#FF5733',
@@ -21,73 +23,67 @@ const COLORS = {
   border: '#E2E8F0',
 };
 
-const FILTERS = ['Tümü', 'Yüksek Puanlar (4.5+)', 'Ücretsiz Giriş'];
+const FILTERS = ['Tumu', 'Yuksek Puanlar (4.5+)', 'Ucretsiz Giris'];
 
 const QUICK_CATEGORIES = [
-  { id: 'q0', label: 'Senin İçin', emoji: '✨' },
-  { id: 'q1', label: 'Galata', emoji: '🗼' },
-  { id: 'q2', label: 'Boğaz Keyfi', emoji: '⛴️' },
-  { id: 'q3', label: 'Kadıköy', emoji: '🎨' },
-  { id: 'q4', label: 'Adalar', emoji: '🏝️' },
+  { id: 'q0', label: 'Senin Icin' },
+  { id: 'q1', label: 'Galata' },
+  { id: 'q2', label: 'Bogaz Keyfi' },
+  { id: 'q3', label: 'Kadikoy' },
+  { id: 'q4', label: 'Adalar' },
 ];
 
-const SAMPLE_LOCATIONS = [
-  {
-    id: '1',
-    name: 'Karaköy Güllüoğlu',
-    category: 'Kahve & Tatlı',
-    rating: 4.8,
-    description: 'Boğaz manzaralı, tarihi bir baklava ve kahve durağı.',
-    emoji: '☕️',
-  },
-  {
-    id: '2',
-    name: 'Balat Sokakları',
-    category: 'Gezi & Fotoğraf',
-    rating: 4.9,
-    description: 'Renkli evleriyle ünlü, yürüyerek keşfedilecek tarihi mahalle.',
-    emoji: '📸',
-  },
-  {
-    id: '3',
-    name: 'Moda Sahili',
-    category: 'Deniz Kenarı',
-    rating: 4.7,
-    description: 'Gün batımını izlemek için sakin bir buluşma noktası.',
-    emoji: '🌅',
-  },
-  {
-    id: '4',
-    name: 'Kadıköy Çarşı',
-    category: 'Yeme & İçme',
-    rating: 4.6,
-    description: 'Sokak lezzetleri ve canlı gece hayatıyla dolu bir bölge.',
-    emoji: '🍢',
-  },
-];
+type Location = {
+  id: string;
+  name: string;
+  description: string;
+};
 
 export default function ExploreScreen() {
-  const [activeFilter, setActiveFilter] = useState('Tümü');
+  const [activeFilter, setActiveFilter] = useState('Tumu');
   const [search, setSearch] = useState('');
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDocs(collection(db, 'locations'))
+      .then((snapshot) => {
+        const items = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        })) as Location[];
+        setLocations(items);
+      })
+      .catch((error) => {
+        console.log('Mekanlar yuklenemedi:', error.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const filteredLocations = locations.filter((item) =>
+    item.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <FlatList
-          data={SAMPLE_LOCATIONS}
+          data={filteredLocations}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <>
               <ThemedText type="title" style={styles.title}>
-                Şehri Keşfet
+                Sehri Kesfet
               </ThemedText>
 
               <View style={styles.searchBar}>
-                <ThemedText style={styles.searchIcon}>🔍</ThemedText>
+                <ThemedText style={styles.searchIcon}>#</ThemedText>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Mekan, rota veya sanat ara..."
+                  placeholder="Mekan ara..."
                   placeholderTextColor="#94A3B8"
                   value={search}
                   onChangeText={setSearch}
@@ -127,11 +123,7 @@ export default function ExploreScreen() {
               >
                 {QUICK_CATEGORIES.map((item) => (
                   <View key={item.id} style={styles.avatarItem}>
-                    <View style={styles.avatarCircle}>
-                      <ThemedText style={styles.avatarEmoji}>
-                        {item.emoji}
-                      </ThemedText>
-                    </View>
+                    <View style={styles.avatarCircle} />
                     <ThemedText style={styles.avatarLabel}>
                       {item.label}
                     </ThemedText>
@@ -139,66 +131,32 @@ export default function ExploreScreen() {
                 ))}
               </ScrollView>
 
-              <View style={styles.sponsoredCard}>
-                <View style={styles.sponsoredBadge}>
-                  <ThemedText style={styles.sponsoredBadgeText}>
-                    SPONSORLU KEŞİF
-                  </ThemedText>
-                </View>
-                <ThemedText type="defaultSemiBold" style={styles.sponsoredTitle}>
-                  The Grand Tarabya — Kıyı Yürüyüşü
-                </ThemedText>
-                <ThemedText style={styles.sponsoredDescription}>
-                  Boğaz'ın en taze esintisinde zengin serpme kahvaltı ile
-                  başlayan keyifli yürüyüş.
-                </ThemedText>
-                <View style={styles.sponsoredTagsRow}>
-                  <View style={styles.sponsoredTag}>
-                    <ThemedText style={styles.sponsoredTagText}>
-                      2x Puan (150 XP)
-                    </ThemedText>
-                  </View>
-                  <View style={styles.sponsoredTag}>
-                    <ThemedText style={styles.sponsoredTagText}>
-                      %15 Çift İndirimi
-                    </ThemedText>
-                  </View>
-                </View>
-                <Pressable style={styles.sponsoredButton}>
-                  <ThemedText style={styles.sponsoredButtonText}>
-                    Rotayı İncele & Check-in Başlat
-                  </ThemedText>
-                </Pressable>
-              </View>
-
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                Öne Çıkan Popüler Mekanlar
+                Tum Mekanlar
               </ThemedText>
+              {loading ? (
+                <ThemedText style={styles.emptyText}>Yukleniyor...</ThemedText>
+              ) : null}
             </>
           }
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={styles.cardImage}>
-                <ThemedText style={styles.cardEmoji}>{item.emoji}</ThemedText>
-              </View>
+              <View style={styles.cardImage} />
               <View style={styles.cardContent}>
-                <View style={styles.cardHeaderRow}>
-                  <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-                  <View style={styles.ratingBadge}>
-                    <ThemedText style={styles.ratingText}>
-                      ⭐ {item.rating}
-                    </ThemedText>
-                  </View>
-                </View>
-                <View style={styles.categoryTag}>
-                  <ThemedText style={styles.categoryText}>
-                    {item.category}
-                  </ThemedText>
-                </View>
-                <ThemedText type="small">{item.description}</ThemedText>
+                <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
+                <ThemedText style={styles.cardDescription}>
+                  {item.description}
+                </ThemedText>
               </View>
             </View>
           )}
+          ListEmptyComponent={
+            !loading ? (
+              <ThemedText style={styles.emptyText}>
+                Mekan bulunamadi.
+              </ThemedText>
+            ) : null
+          }
         />
       </SafeAreaView>
     </ThemedView>
@@ -206,17 +164,13 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   safeArea: {
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
-  title: {
-    marginBottom: Spacing.three,
-  },
+  title: { marginBottom: Spacing.three },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -228,13 +182,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
     gap: 8,
   },
-  searchIcon: {
-    fontSize: 16,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-  },
+  searchIcon: { fontSize: 16 },
+  searchInput: { flex: 1, fontSize: 15 },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -252,102 +201,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  filterText: {
-    fontSize: 13,
-  },
-  filterTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  avatarScroll: {
-    marginBottom: Spacing.three,
-  },
-  avatarScrollContent: {
-    gap: 16,
-    paddingRight: Spacing.four,
-  },
-  avatarItem: {
-    alignItems: 'center',
-    width: 64,
-  },
+  filterText: { fontSize: 13 },
+  filterTextActive: { color: '#fff', fontWeight: '600' },
+  avatarScroll: { marginBottom: Spacing.four },
+  avatarScrollContent: { gap: 16, paddingRight: Spacing.four },
+  avatarItem: { alignItems: 'center', width: 64 },
   avatarCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: '#FFE4D6',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 4,
   },
-  avatarEmoji: {
-    fontSize: 24,
-  },
-  avatarLabel: {
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  sponsoredCard: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    padding: Spacing.four,
-    marginBottom: Spacing.four,
-    gap: 8,
-  },
-  sponsoredBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  sponsoredBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  sponsoredTitle: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  sponsoredDescription: {
-    color: '#FFE4D6',
-    fontSize: 13,
-  },
-  sponsoredTagsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-  },
-  sponsoredTag: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  sponsoredTagText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  sponsoredButton: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  sponsoredButtonText: {
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  sectionTitle: {
-    marginBottom: Spacing.three,
-  },
-  list: {
-    gap: Spacing.three,
-    paddingBottom: Spacing.four,
-  },
+  avatarLabel: { fontSize: 11, textAlign: 'center' },
+  sectionTitle: { marginBottom: Spacing.three },
+  list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: {
     flexDirection: 'row',
     borderWidth: 1,
@@ -355,45 +223,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
   },
-  cardImage: {
-    width: 90,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardEmoji: {
-    fontSize: 32,
-  },
-  cardContent: {
-    flex: 1,
-    padding: Spacing.three,
-    gap: 6,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ratingBadge: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  ratingText: {
-    fontSize: 12,
-    color: '#92400E',
-  },
-  categoryTag: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#CCFBF1',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  categoryText: {
-    fontSize: 11,
-    color: COLORS.tertiary,
-    fontWeight: '600',
-  },
+  cardImage: { width: 90, backgroundColor: COLORS.secondary },
+  cardContent: { flex: 1, padding: Spacing.three, gap: 6 },
+  cardDescription: { fontSize: 12, color: '#94A3B8' },
+  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
 });
