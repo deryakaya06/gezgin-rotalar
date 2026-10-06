@@ -31,13 +31,6 @@ const COLORS = {
   border: '#E2E8F0',
 };
 
-const NEARBY_PEOPLE = [
-  { id: 'p1', label: 'Ece & Kaan', emoji: '👩‍❤️‍👨' },
-  { id: 'p2', label: 'Mert & Selin', emoji: '💑' },
-  { id: 'p3', label: 'Deniz & Can', emoji: '👫' },
-  { id: 'p4', label: 'Ayşe & Ali', emoji: '👨‍👩‍👧' },
-];
-
 function formatDate(value: any): string {
   if (!value) return '';
   const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
@@ -47,10 +40,18 @@ function formatDate(value: any): string {
   return `${dd}.${mm}.${date.getFullYear()}`;
 }
 
+function shortName(email?: string): string {
+  if (!email) return 'Kullanıcı';
+  const name = email.split('@')[0];
+  return name.length > 8 ? name.slice(0, 8) + '…' : name;
+}
+
 export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'keşfet' | 'takip'>('keşfet');
   const [checkIns, setCheckIns] = useState<any[]>([]);
+  const [people, setPeople] = useState<any[]>([]);
+  const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -63,14 +64,30 @@ export default function HomeScreen() {
       );
       const snapshot = await getDocs(q);
       const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      console.log('Check-in sayısı:', items.length);
-      if (items.length > 0) console.log('İlk check-in alanları:', items[0]);
       setCheckIns(items);
     } catch (error: any) {
       console.log('Akış hatası:', error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }, []);
+
+  const loadPeople = useCallback(async (myUid: string) => {
+    try {
+      const snapshot = await getDocs(query(collection(db, 'users'), limit(100)));
+      const map: Record<string, any> = {};
+      snapshot.docs.forEach((d) => {
+        map[d.id] = d.data();
+      });
+      setUsersMap(map);
+      const others = snapshot.docs
+        .filter((d) => d.id !== myUid)
+        .slice(0, 15)
+        .map((d) => ({ id: d.id, ...d.data() }));
+      setPeople(others);
+    } catch (error: any) {
+      console.log('Kullanıcılar alınamadı:', error.message);
     }
   }, []);
 
@@ -81,14 +98,16 @@ export default function HomeScreen() {
           if (snapshot.exists()) setUserData(snapshot.data());
         });
         loadCheckIns();
+        loadPeople(user.uid);
       }
     });
     return () => unsubscribe();
-  }, [loadCheckIns]);
+  }, [loadCheckIns, loadPeople]);
 
   function onRefresh() {
     setRefreshing(true);
     loadCheckIns();
+    if (auth.currentUser) loadPeople(auth.currentUser.uid);
   }
 
   return (
@@ -175,59 +194,61 @@ export default function HomeScreen() {
                   </View>
                   <ThemedText style={styles.avatarLabel}>Sen</ThemedText>
                 </View>
-                {NEARBY_PEOPLE.map((person) => (
+                {people.map((person) => (
                   <View key={person.id} style={styles.avatarItem}>
                     <View style={styles.avatarCircle}>
                       <ThemedText style={styles.avatarEmoji}>
-                        {person.emoji}
+                        {person.accountType === 'couple' ? '💑' : '👥'}
                       </ThemedText>
                     </View>
-                    <ThemedText style={styles.avatarLabel}>
-                      {person.label}
+                    <ThemedText style={styles.avatarLabel} numberOfLines={1}>
+                      {shortName(person.email)}
                     </ThemedText>
                   </View>
                 ))}
               </ScrollView>
             </>
           }
-          renderItem={({ item }) => (
-            <View style={styles.postCard}>
-              <View style={styles.postHeaderRow}>
-                <View style={styles.postAvatar}>
-                  <ThemedText style={styles.postAvatarText}>
-                    {item.accountType === 'couple' ? '💑' : '👥'}
+          renderItem={({ item }) => {
+            const author = usersMap[item.userId];
+            const isCouple = author?.accountType === 'couple';
+            return (
+              <View style={styles.postCard}>
+                <View style={styles.postHeaderRow}>
+                  <View style={styles.postAvatar}>
+                    <ThemedText style={styles.postAvatarText}>
+                      {isCouple ? '💑' : '👥'}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.postHeaderText}>
+                    <ThemedText type="defaultSemiBold">
+                      {isCouple ? 'Bir Çift' : 'Bir Arkadaş Grubu'}
+                    </ThemedText>
+                    <ThemedText style={styles.postMeta}>
+                      {author?.email ?? ''}
+                      {item.createdAt ? ` - ${formatDate(item.createdAt)}` : ''}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                <View style={styles.placeTag}>
+                  <ThemedText style={styles.placeTagText}>
+                    📍 {item.locationName ?? 'Bilinmeyen mekan'}
                   </ThemedText>
                 </View>
-                <View style={styles.postHeaderText}>
-                  <ThemedText type="defaultSemiBold">
-                    {item.accountType === 'couple'
-                      ? 'Bir Çift'
-                      : 'Bir Arkadaş Grubu'}
-                  </ThemedText>
-                  <ThemedText style={styles.postMeta}>
-                    {item.email ?? ''}
-                    {item.createdAt ? ` - ${formatDate(item.createdAt)}` : ''}
+
+                {item.note ? (
+                  <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
+                ) : null}
+
+                <View style={styles.pointsTag}>
+                  <ThemedText style={styles.pointsTagText}>
+                    +{item.points ?? 10} puan
                   </ThemedText>
                 </View>
               </View>
-
-              <View style={styles.placeTag}>
-                <ThemedText style={styles.placeTagText}>
-                  📍 {item.placeName ?? 'Bilinmeyen mekan'}
-                </ThemedText>
-              </View>
-
-              {item.note ? (
-                <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
-              ) : null}
-
-              <View style={styles.pointsTag}>
-                <ThemedText style={styles.pointsTagText}>
-                  +{item.points ?? 10} puan
-                </ThemedText>
-              </View>
-            </View>
-          )}
+            );
+          }}
         />
       </SafeAreaView>
     </ThemedView>

@@ -12,6 +12,12 @@ import { auth, db } from '@/firebase';
 
 const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
 
+const BADGES = [
+  { id: 'first', emoji: '🌱', label: 'İlk Adım', min: 1 },
+  { id: 'explorer', emoji: '🧭', label: 'Kaşif', min: 5 },
+  { id: 'master', emoji: '🏆', label: 'Rota Ustası', min: 10 },
+];
+
 export default function ProfileScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
@@ -36,6 +42,8 @@ export default function ProfileScreen() {
     });
     return () => unsubscribe();
   }, []);
+
+  const earnedBadges = BADGES.filter((b) => checkInCount >= b.min);
 
   function handleLogout() {
     signOut(auth).then(() => {
@@ -75,11 +83,22 @@ export default function ProfileScreen() {
           </ThemedView>
           <ThemedView style={styles.statBox}>
             <ThemedText type="title" style={styles.statNumber}>
-              0
+              {earnedBadges.length}
             </ThemedText>
             <ThemedText style={styles.statLabel}>Rozet</ThemedText>
           </ThemedView>
         </ThemedView>
+
+        {earnedBadges.length > 0 && (
+          <ThemedView style={styles.badgeRow}>
+            {earnedBadges.map((b) => (
+              <ThemedView key={b.id} style={styles.badgeItem}>
+                <ThemedText style={styles.badgeEmoji}>{b.emoji}</ThemedText>
+                <ThemedText style={styles.badgeLabel}>{b.label}</ThemedText>
+              </ThemedView>
+            ))}
+          </ThemedView>
+        )}
 
         <Pressable style={styles.leaderboardButton} onPress={() => router.push('/leaderboard')}>
           <ThemedText style={styles.leaderboardButtonText}>Lider Tablosunu Gor</ThemedText>
@@ -122,6 +141,10 @@ const styles = StyleSheet.create({
   },
   statNumber: { fontSize: 20 },
   statLabel: { fontSize: 11, color: '#94A3B8' },
+  badgeRow: { flexDirection: 'row', gap: Spacing.three, justifyContent: 'center' },
+  badgeItem: { alignItems: 'center', gap: 2 },
+  badgeEmoji: { fontSize: 28 },
+  badgeLabel: { fontSize: 11, color: '#94A3B8' },
   leaderboardButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,
