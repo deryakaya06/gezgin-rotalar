@@ -1,14 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+} from 'firebase/firestore';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,57 +38,76 @@ const NEARBY_PEOPLE = [
   { id: 'p4', label: 'Ayşe & Ali', emoji: '👨‍👩‍👧' },
 ];
 
-const SAMPLE_POSTS = [
-  {
-    id: 'post1',
-    user: 'Ece & Kaan',
-    time: '2 sa önce',
-    location: 'Galata Kulesi & Çevre Kafeleri',
-    emoji: '🗼',
-    likes: 142,
-    comments: 18,
-    caption:
-      "Karaköy'den yukarı tırmanırken ara sokaktaki minik antikacıya mutlaka uğrayın! Kahve kokusu ve plak sesleri inanılmazdı ☕️",
-    tags: '#Galata #HaftasonuRotası #İstanbulRotaları',
-  },
-  {
-    id: 'post2',
-    user: 'Mert & Selin ekibi',
-    time: '4 sa önce',
-    location: 'Moda Sahili Gün Batımı',
-    emoji: '🌇',
-    likes: 94,
-    comments: 9,
-    caption:
-      'Günün en tatlı saatinde çay bahçesinde yer bulduk! Moda sahil hattında bisiklet turu sonrası demli çay ve çekirdek idealsi kaçmaz 🍵',
-    tags: '#KadıköyModa #GünBatımıNoktası #DostlukRotası',
-  },
-];
+function formatDate(value: any): string {
+  if (!value) return '';
+  const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+  if (isNaN(date.getTime())) return '';
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dd}.${mm}.${date.getFullYear()}`;
+}
 
 export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'keşfet' | 'takip'>('keşfet');
+  const [checkIns, setCheckIns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadCheckIns = useCallback(async () => {
+    try {
+      const q = query(
+        collection(db, 'check_ins'),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      console.log('Check-in sayısı:', items.length);
+      if (items.length > 0) console.log('İlk check-in alanları:', items[0]);
+      setCheckIns(items);
+    } catch (error: any) {
+      console.log('Akış hatası:', error.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         getDoc(doc(db, 'users', user.uid)).then((snapshot) => {
-          if (snapshot.exists()) {
-            setUserData(snapshot.data());
-          }
+          if (snapshot.exists()) setUserData(snapshot.data());
         });
+        loadCheckIns();
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [loadCheckIns]);
+
+  function onRefresh() {
+    setRefreshing(true);
+    loadCheckIns();
+  }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <FlatList
-          data={SAMPLE_POSTS}
+          data={checkIns}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <ThemedText style={styles.emptyText}>
+              {loading
+                ? 'Yükleniyor...'
+                : 'Henüz kimse check-in yapmamış...'}
+            </ThemedText>
+          }
           ListHeaderComponent={
             <>
               <View style={styles.headerRow}>
@@ -131,7 +159,7 @@ export default function HomeScreen() {
 
               <View style={styles.statsBanner}>
                 <ThemedText style={styles.statsText}>
-                  📍 Şu an İstanbul'da 48 çift aktif rotada
+                  📍 Toplam {checkIns.length} check-in yapıldı
                 </ThemedText>
               </View>
 
@@ -167,42 +195,37 @@ export default function HomeScreen() {
               <View style={styles.postHeaderRow}>
                 <View style={styles.postAvatar}>
                   <ThemedText style={styles.postAvatarText}>
-                    {item.emoji}
+                    {item.accountType === 'couple' ? '💑' : '👥'}
                   </ThemedText>
                 </View>
                 <View style={styles.postHeaderText}>
-                  <ThemedText type="defaultSemiBold">{item.user}</ThemedText>
+                  <ThemedText type="defaultSemiBold">
+                    {item.accountType === 'couple'
+                      ? 'Bir Çift'
+                      : 'Bir Arkadaş Grubu'}
+                  </ThemedText>
                   <ThemedText style={styles.postMeta}>
-                    {item.time} · {item.location}
+                    {item.email ?? ''}
+                    {item.createdAt ? ` - ${formatDate(item.createdAt)}` : ''}
                   </ThemedText>
                 </View>
               </View>
 
-              <View style={styles.postImage}>
-                <ThemedText style={styles.postImageEmoji}>
-                  {item.emoji}
+              <View style={styles.placeTag}>
+                <ThemedText style={styles.placeTagText}>
+                  📍 {item.placeName ?? 'Bilinmeyen mekan'}
                 </ThemedText>
               </View>
 
-              <View style={styles.postActionsRow}>
-                <ThemedText style={styles.postAction}>
-                  ❤️ {item.likes}
-                </ThemedText>
-                <ThemedText style={styles.postAction}>
-                  💬 {item.comments}
-                </ThemedText>
-                <ThemedText style={styles.postAction}>🔗</ThemedText>
-                <View style={styles.routeButton}>
-                  <ThemedText style={styles.routeButtonText}>
-                    🏆 Rotayı Al
-                  </ThemedText>
-                </View>
-              </View>
+              {item.note ? (
+                <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
+              ) : null}
 
-              <ThemedText style={styles.postCaption}>
-                {item.caption}
-              </ThemedText>
-              <ThemedText style={styles.postTags}>{item.tags}</ThemedText>
+              <View style={styles.pointsTag}>
+                <ThemedText style={styles.pointsTagText}>
+                  +{item.points ?? 10} puan
+                </ThemedText>
+              </View>
             </View>
           )}
         />
@@ -212,9 +235,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   safeArea: {
     flex: 1,
     paddingHorizontal: Spacing.four,
@@ -240,9 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarSmallText: {
-    fontSize: 18,
-  },
+  avatarSmallText: { fontSize: 18 },
   tabRow: {
     flexDirection: 'row',
     gap: 8,
@@ -259,13 +278,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  tabText: {
-    fontSize: 13,
-  },
-  tabTextActive: {
-    color: '#fff',
-    fontWeight: '700',
-  },
+  tabText: { fontSize: 13 },
+  tabTextActive: { color: '#fff', fontWeight: '700' },
   statsBanner: {
     backgroundColor: '#FFF1EC',
     borderRadius: 10,
@@ -278,17 +292,12 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
-  peopleScroll: {
-    marginBottom: Spacing.four,
-  },
+  peopleScroll: { marginBottom: Spacing.four },
   peopleScrollContent: {
     gap: 16,
     paddingRight: Spacing.four,
   },
-  avatarItem: {
-    alignItems: 'center',
-    width: 64,
-  },
+  avatarItem: { alignItems: 'center', width: 64 },
   avatarCircle: {
     width: 56,
     height: 56,
@@ -303,16 +312,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.tertiary,
   },
-  avatarEmoji: {
-    fontSize: 22,
-  },
-  avatarLabel: {
-    fontSize: 11,
-    textAlign: 'center',
-  },
+  avatarEmoji: { fontSize: 22 },
+  avatarLabel: { fontSize: 11, textAlign: 'center' },
   list: {
     gap: Spacing.four,
     paddingBottom: Spacing.four,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#94A3B8',
+    marginTop: Spacing.four,
   },
   postCard: {
     borderWidth: 1,
@@ -334,52 +343,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  postAvatarText: {
-    fontSize: 16,
+  postAvatarText: { fontSize: 16 },
+  postHeaderText: { flex: 1 },
+  postMeta: { fontSize: 11, color: '#94A3B8' },
+  placeTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#CCFBF1',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
-  postHeaderText: {
-    flex: 1,
+  placeTagText: {
+    fontSize: 12,
+    color: COLORS.tertiary,
+    fontWeight: '700',
   },
-  postMeta: {
-    fontSize: 11,
-    color: '#94A3B8',
-  },
-  postImage: {
-    height: 140,
-    borderRadius: 12,
-    backgroundColor: '#FDE68A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  postImageEmoji: {
-    fontSize: 48,
-  },
-  postActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  postAction: {
-    fontSize: 13,
-  },
-  routeButton: {
-    marginLeft: 'auto',
+  postCaption: { fontSize: 13, lineHeight: 18 },
+  pointsTag: {
+    alignSelf: 'flex-start',
     backgroundColor: '#FFF1EC',
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
-  routeButtonText: {
+  pointsTagText: {
     fontSize: 11,
     color: COLORS.primary,
     fontWeight: '700',
-  },
-  postCaption: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  postTags: {
-    fontSize: 12,
-    color: COLORS.tertiary,
   },
 });

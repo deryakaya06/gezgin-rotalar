@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
@@ -15,19 +15,22 @@ const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
 export default function ProfileScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
+  const [checkInCount, setCheckInCount] = useState(0);
 
-useEffect(() => {
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth durumu değişti. Kullanıcı:', user?.uid ?? 'YOK');
       if (user) {
-        getDoc(doc(db, 'users', user.uid))
+        getDoc(doc(db, 'users', user.uid)).then((snapshot) => {
+          if (snapshot.exists()) setUserData(snapshot.data());
+        });
+
+        const q = query(collection(db, 'check_ins'), where('userId', '==', user.uid));
+        getDocs(q)
           .then((snapshot) => {
-            console.log('Belge var mı?', snapshot.exists());
-            console.log('Belge verisi:', snapshot.data());
-            if (snapshot.exists()) setUserData(snapshot.data());
+            setCheckInCount(snapshot.size);
           })
           .catch((error) => {
-            console.log('Firestore hatası:', error.message);
+            console.log('Check-in sayisi alinamadi:', error.message);
           });
       }
     });
@@ -66,7 +69,7 @@ useEffect(() => {
           </ThemedView>
           <ThemedView style={styles.statBox}>
             <ThemedText type="title" style={styles.statNumber}>
-              0
+              {checkInCount}
             </ThemedText>
             <ThemedText style={styles.statLabel}>Check-in</ThemedText>
           </ThemedView>
@@ -77,6 +80,10 @@ useEffect(() => {
             <ThemedText style={styles.statLabel}>Rozet</ThemedText>
           </ThemedView>
         </ThemedView>
+
+        <Pressable style={styles.leaderboardButton} onPress={() => router.push('/leaderboard')}>
+          <ThemedText style={styles.leaderboardButtonText}>Lider Tablosunu Gor</ThemedText>
+        </Pressable>
 
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <ThemedText style={styles.logoutText}>Çıkış Yap</ThemedText>
@@ -115,6 +122,14 @@ const styles = StyleSheet.create({
   },
   statNumber: { fontSize: 20 },
   statLabel: { fontSize: 11, color: '#94A3B8' },
+  leaderboardButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: Spacing.two,
+  },
+  leaderboardButtonText: { color: '#fff', fontWeight: '700' },
   logoutButton: {
     borderWidth: 1,
     borderColor: COLORS.primary,
