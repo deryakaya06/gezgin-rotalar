@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 
 import { ThemedText } from '@/components/themed-text';
@@ -40,6 +41,7 @@ type Location = {
 };
 
 export default function ExploreScreen() {
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('Tumu');
   const [search, setSearch] = useState('');
   const [locations, setLocations] = useState<Location[]>([]);
@@ -140,7 +142,19 @@ export default function ExploreScreen() {
             </>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <Pressable
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: '/location-detail',
+                  params: {
+                    id: item.id,
+                    name: item.name,
+                    description: item.description,
+                  },
+                })
+              }
+            >
               <View style={styles.cardImage} />
               <View style={styles.cardContent}>
                 <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
@@ -148,7 +162,7 @@ export default function ExploreScreen() {
                   {item.description}
                 </ThemedText>
               </View>
-            </View>
+            </Pressable>
           )}
           ListEmptyComponent={
             !loading ? (

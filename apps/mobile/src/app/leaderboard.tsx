@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, orderBy, query, limit } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  setDoc,
+} from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 import { ThemedText } from '@/components/themed-text';
@@ -24,10 +33,14 @@ export default function LeaderboardScreen() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUserId(user?.uid ?? null);
+      if (user) {
+        loadFollowing(user.uid);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -50,6 +63,38 @@ export default function LeaderboardScreen() {
       });
   }, []);
 
+  function loadFollowing(uid: string) {
+    getDocs(collection(db, 'users', uid, 'following'))
+      .then((snapshot) => {
+        const ids = new Set(snapshot.docs.map((docItem) => docItem.id));
+        setFollowingIds(ids);
+      })
+      .catch((error) => {
+        console.log('Takip listesi alinamadi:', error.message);
+      });
+  }
+
+  function toggleFollow(targetUserId: string) {
+    if (!currentUserId) return;
+
+    const isFollowing = followingIds.has(targetUserId);
+    const followingRef = doc(db, 'users', currentUserId, 'following', targetUserId);
+
+    if (isFollowing) {
+      deleteDoc(followingRef).then(() => {
+        setFollowingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(targetUserId);
+          return next;
+        });
+      });
+    } else {
+      setDoc(followingRef, { createdAt: new Date().toISOString() }).then(() => {
+        setFollowingIds((prev) => new Set(prev).add(targetUserId));
+      });
+    }
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -69,6 +114,7 @@ export default function LeaderboardScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => {
             const isMe = item.id === currentUserId;
+            const isFollowing = followingIds.has(item.id);
             return (
               <View style={[styles.row, isMe && styles.rowHighlight]}>
                 <ThemedText type="defaultSemiBold" style={styles.rank}>
@@ -83,6 +129,24 @@ export default function LeaderboardScreen() {
                   </ThemedText>
                 </View>
                 <ThemedText style={styles.points}>{item.points} puan</ThemedText>
+                {!isMe ? (
+                  <Pressable
+                    style={[
+                      styles.followButton,
+                      isFollowing && styles.followButtonActive,
+                    ]}
+                    onPress={() => toggleFollow(item.id)}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.followButtonText,
+                        isFollowing && styles.followButtonTextActive,
+                      ]}
+                    >
+                      {isFollowing ? 'Takip Ediliyor' : 'Takip Et'}
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
               </View>
             );
           }}
@@ -109,13 +173,11 @@ const styles = StyleSheet.create({
   title: { marginBottom: Spacing.three },
   list: { gap: Spacing.two, paddingBottom: Spacing.four },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
     padding: Spacing.three,
-    gap: Spacing.three,
+    gap: 8,
   },
   rowHighlight: {
     borderColor: COLORS.primary,
@@ -126,5 +188,18 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1 },
   rowSubtitle: { fontSize: 11, color: '#94A3B8' },
   points: { fontWeight: '700', color: COLORS.primary },
+  followButton: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  followButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  followButtonText: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
+  followButtonTextActive: { color: '#fff' },
   emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
 });

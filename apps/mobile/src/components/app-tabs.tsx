@@ -13,7 +13,7 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Akış</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Akis</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/home.png')}
           renderingMode="template"
@@ -21,15 +21,11 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Keşfet</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Kesfet</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="create">
-        <NativeTabs.Trigger.Label>Ekle</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="routes">
