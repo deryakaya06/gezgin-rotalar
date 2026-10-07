@@ -1,12 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
@@ -24,109 +17,115 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { auth, db } from '@/firebase';
 
-const COLORS = {
-  primary: '#FF5733',
-  secondary: '#F59E0B',
-  tertiary: '#0D9488',
-  border: '#E2E8F0',
+const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
+
+type FeedItem = {
+  id: string;
+  locationName: string;
+  note: string;
+  points: number;
+  createdAt: any;
+  userEmail: string;
+  accountType: string;
+  userId: string;
 };
 
-function formatDate(value: any): string {
-  if (!value) return '';
-  const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
-  if (isNaN(date.getTime())) return '';
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  return `${dd}.${mm}.${date.getFullYear()}`;
-}
-
-function shortName(email?: string): string {
-  if (!email) return 'Kullanıcı';
-  const name = email.split('@')[0];
-  return name.length > 8 ? name.slice(0, 8) + '…' : name;
-}
-
 export default function HomeScreen() {
-  const [userData, setUserData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'keşfet' | 'takip'>('keşfet');
-  const [checkIns, setCheckIns] = useState<any[]>([]);
-  const [people, setPeople] = useState<any[]>([]);
-  const [usersMap, setUsersMap] = useState<Record<string, any>>({});
+  const [mode, setMode] = useState<'kesfet' | 'takip'>('kesfet');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+  const [allFeedItems, setAllFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const loadCheckIns = useCallback(async () => {
-    try {
-      const q = query(
-        collection(db, 'check_ins'),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-      const snapshot = await getDocs(q);
-      const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setCheckIns(items);
-    } catch (error: any) {
-      console.log('Akış hatası:', error.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  const loadPeople = useCallback(async (myUid: string) => {
-    try {
-      const snapshot = await getDocs(query(collection(db, 'users'), limit(100)));
-      const map: Record<string, any> = {};
-      snapshot.docs.forEach((d) => {
-        map[d.id] = d.data();
-      });
-      setUsersMap(map);
-      const others = snapshot.docs
-        .filter((d) => d.id !== myUid)
-        .slice(0, 15)
-        .map((d) => ({ id: d.id, ...d.data() }));
-      setPeople(others);
-    } catch (error: any) {
-      console.log('Kullanıcılar alınamadı:', error.message);
-    }
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        getDoc(doc(db, 'users', user.uid)).then((snapshot) => {
-          if (snapshot.exists()) setUserData(snapshot.data());
-        });
-        loadCheckIns();
-        loadPeople(user.uid);
+      if (!user) {
+        setLoading(false);
+        return;
       }
+      setCurrentUserId(user.uid);
+      loadFollowing(user.uid);
+      loadFeed();
     });
     return () => unsubscribe();
-  }, [loadCheckIns, loadPeople]);
+  }, []);
 
-  function onRefresh() {
-    setRefreshing(true);
-    loadCheckIns();
-    if (auth.currentUser) loadPeople(auth.currentUser.uid);
+  function loadFollowing(uid: string) {
+    getDocs(collection(db, 'users', uid, 'following'))
+      .then((snapshot) => {
+        setFollowingIds(snapshot.docs.map((docItem) => docItem.id));
+      })
+      .catch((error) => {
+        console.log('Takip listesi alinamadi:', error.message);
+      });
   }
+
+  function loadFeed() {
+    const q = query(
+      collection(db, 'check_ins'),
+      orderBy('createdAt', 'desc'),
+      limit(30)
+    );
+
+    getDocs(q)
+      .then(async (snapshot) => {
+        const rawItems = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        })) as any[];
+
+        const uniqueUserIds = Array.from(
+          new Set(rawItems.map((item) => item.userId))
+        );
+
+        const userDocs = await Promise.all(
+          uniqueUserIds.map((uid) => getDoc(doc(db, 'users', uid)))
+        );
+
+        const userMap: Record<string, any> = {};
+        userDocs.forEach((userSnap, index) => {
+          userMap[uniqueUserIds[index]] = userSnap.exists()
+            ? userSnap.data()
+            : null;
+        });
+
+        const combined: FeedItem[] = rawItems.map((item) => ({
+          id: item.id,
+          locationName: item.locationName,
+          note: item.note,
+          points: item.points,
+          createdAt: item.createdAt,
+          userId: item.userId,
+          userEmail: userMap[item.userId]?.email ?? 'Bir Gezgin',
+          accountType: userMap[item.userId]?.accountType ?? 'friends',
+        }));
+        setAllFeedItems(combined);
+      })
+      .catch((error) => {
+        console.log('Akis yuklenemedi:', error.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  function formatDate(timestamp: any) {
+    if (!timestamp?.toDate) return '...';
+    return timestamp.toDate().toLocaleDateString('tr-TR');
+  }
+
+  const displayedItems =
+    mode === 'kesfet'
+      ? allFeedItems
+      : allFeedItems.filter((item) => followingIds.includes(item.userId));
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <FlatList
-          data={checkIns}
+          data={displayedItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={
-            <ThemedText style={styles.emptyText}>
-              {loading
-                ? 'Yükleniyor...'
-                : 'Henüz kimse check-in yapmamış...'}
-            </ThemedText>
-          }
           ListHeaderComponent={
             <>
               <View style={styles.headerRow}>
@@ -134,121 +133,84 @@ export default function HomeScreen() {
                   <ThemedText type="title">Gezgin Rotalar</ThemedText>
                   <ThemedText style={styles.headerSubtitle}>FEED</ThemedText>
                 </View>
-                <View style={styles.avatarSmall}>
-                  <ThemedText style={styles.avatarSmallText}>
-                    {userData?.accountType === 'couple' ? '💑' : '👥'}
-                  </ThemedText>
-                </View>
               </View>
 
               <View style={styles.tabRow}>
                 <Pressable
-                  onPress={() => setActiveTab('keşfet')}
+                  onPress={() => setMode('kesfet')}
                   style={[
                     styles.tabButton,
-                    activeTab === 'keşfet' && styles.tabButtonActive,
+                    mode === 'kesfet' && styles.tabButtonActive,
                   ]}
                 >
                   <ThemedText
                     style={[
                       styles.tabText,
-                      activeTab === 'keşfet' && styles.tabTextActive,
+                      mode === 'kesfet' && styles.tabTextActive,
                     ]}
                   >
-                    Keşfet
+                    Kesfet
                   </ThemedText>
                 </Pressable>
                 <Pressable
-                  onPress={() => setActiveTab('takip')}
+                  onPress={() => setMode('takip')}
                   style={[
                     styles.tabButton,
-                    activeTab === 'takip' && styles.tabButtonActive,
+                    mode === 'takip' && styles.tabButtonActive,
                   ]}
                 >
                   <ThemedText
                     style={[
                       styles.tabText,
-                      activeTab === 'takip' && styles.tabTextActive,
+                      mode === 'takip' && styles.tabTextActive,
                     ]}
                   >
                     Takip Edilenler
                   </ThemedText>
                 </Pressable>
               </View>
+            </>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.postCard}>
+              <View style={styles.postHeaderRow}>
+                <View style={styles.postAvatar} />
+                <View style={styles.postHeaderText}>
+                  <ThemedText type="defaultSemiBold">
+                    {item.accountType === 'couple' ? 'Bir Cift' : 'Bir Arkadas Grubu'}
+                  </ThemedText>
+                  <ThemedText style={styles.postMeta}>
+                    {item.userEmail} - {formatDate(item.createdAt)}
+                  </ThemedText>
+                </View>
+              </View>
 
-              <View style={styles.statsBanner}>
-                <ThemedText style={styles.statsText}>
-                  📍 Toplam {checkIns.length} check-in yapıldı
+              <View style={styles.locationBadge}>
+                <ThemedText style={styles.locationBadgeText}>
+                  {item.locationName}
                 </ThemedText>
               </View>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.peopleScroll}
-                contentContainerStyle={styles.peopleScrollContent}
-              >
-                <View style={styles.avatarItem}>
-                  <View style={[styles.avatarCircle, styles.avatarCircleYou]}>
-                    <ThemedText style={styles.avatarEmoji}>👤</ThemedText>
-                  </View>
-                  <ThemedText style={styles.avatarLabel}>Sen</ThemedText>
-                </View>
-                {people.map((person) => (
-                  <View key={person.id} style={styles.avatarItem}>
-                    <View style={styles.avatarCircle}>
-                      <ThemedText style={styles.avatarEmoji}>
-                        {person.accountType === 'couple' ? '💑' : '👥'}
-                      </ThemedText>
-                    </View>
-                    <ThemedText style={styles.avatarLabel} numberOfLines={1}>
-                      {shortName(person.email)}
-                    </ThemedText>
-                  </View>
-                ))}
-              </ScrollView>
-            </>
-          }
-          renderItem={({ item }) => {
-            const author = usersMap[item.userId];
-            const isCouple = author?.accountType === 'couple';
-            return (
-              <View style={styles.postCard}>
-                <View style={styles.postHeaderRow}>
-                  <View style={styles.postAvatar}>
-                    <ThemedText style={styles.postAvatarText}>
-                      {isCouple ? '💑' : '👥'}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.postHeaderText}>
-                    <ThemedText type="defaultSemiBold">
-                      {isCouple ? 'Bir Çift' : 'Bir Arkadaş Grubu'}
-                    </ThemedText>
-                    <ThemedText style={styles.postMeta}>
-                      {author?.email ?? ''}
-                      {item.createdAt ? ` - ${formatDate(item.createdAt)}` : ''}
-                    </ThemedText>
-                  </View>
-                </View>
+              {item.note ? (
+                <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
+              ) : null}
 
-                <View style={styles.placeTag}>
-                  <ThemedText style={styles.placeTagText}>
-                    📍 {item.locationName ?? 'Bilinmeyen mekan'}
-                  </ThemedText>
-                </View>
-
-                {item.note ? (
-                  <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
-                ) : null}
-
-                <View style={styles.pointsTag}>
-                  <ThemedText style={styles.pointsTagText}>
-                    +{item.points ?? 10} puan
-                  </ThemedText>
-                </View>
+              <View style={styles.pointsTag}>
+                <ThemedText style={styles.pointsTagText}>
+                  +{item.points} puan
+                </ThemedText>
               </View>
-            );
-          }}
+            </View>
+          )}
+          ListEmptyComponent={
+            <ThemedText style={styles.emptyText}>
+              {loading
+                ? 'Yukleniyor...'
+                : mode === 'takip'
+                ? 'Henuz kimseyi takip etmiyorsun. Lider Tablosu uzerinden birilerini takip edebilirsin.'
+                : 'Henuz kimse check-in yapmamis. Ilk check-ini sen yap!'}
+            </ThemedText>
+          }
         />
       </SafeAreaView>
     </ThemedView>
@@ -262,32 +224,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.three,
-  },
+  headerRow: { marginBottom: Spacing.three },
   headerSubtitle: {
     fontSize: 11,
     color: '#94A3B8',
     fontWeight: '700',
     letterSpacing: 1,
   },
-  avatarSmall: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFE4D6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarSmallText: { fontSize: 18 },
-  tabRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: Spacing.three,
-  },
+  tabRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.three },
   tabButton: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -301,49 +245,7 @@ const styles = StyleSheet.create({
   },
   tabText: { fontSize: 13 },
   tabTextActive: { color: '#fff', fontWeight: '700' },
-  statsBanner: {
-    backgroundColor: '#FFF1EC',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: Spacing.three,
-  },
-  statsText: {
-    fontSize: 13,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  peopleScroll: { marginBottom: Spacing.four },
-  peopleScrollContent: {
-    gap: 16,
-    paddingRight: Spacing.four,
-  },
-  avatarItem: { alignItems: 'center', width: 64 },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFE4D6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  avatarCircleYou: {
-    backgroundColor: '#CCFBF1',
-    borderWidth: 2,
-    borderColor: COLORS.tertiary,
-  },
-  avatarEmoji: { fontSize: 22 },
-  avatarLabel: { fontSize: 11, textAlign: 'center' },
-  list: {
-    gap: Spacing.four,
-    paddingBottom: Spacing.four,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#94A3B8',
-    marginTop: Spacing.four,
-  },
+  list: { gap: Spacing.three, paddingBottom: Spacing.four },
   postCard: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -351,45 +253,31 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: 8,
   },
-  postHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  postHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   postAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#F59E0B',
   },
-  postAvatarText: { fontSize: 16 },
   postHeaderText: { flex: 1 },
   postMeta: { fontSize: 11, color: '#94A3B8' },
-  placeTag: {
+  locationBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#CCFBF1',
     borderRadius: 8,
-    paddingVertical: 4,
     paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  placeTagText: {
-    fontSize: 12,
-    color: COLORS.tertiary,
-    fontWeight: '700',
-  },
+  locationBadgeText: { fontSize: 13, color: '#0D9488', fontWeight: '600' },
   postCaption: { fontSize: 13, lineHeight: 18 },
   pointsTag: {
     alignSelf: 'flex-start',
     backgroundColor: '#FFF1EC',
     borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  pointsTagText: {
-    fontSize: 11,
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
+  pointsTagText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
+  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
 });
