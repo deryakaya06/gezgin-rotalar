@@ -16,11 +16,14 @@ import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
+import { Tag } from '@/components/ui/tag';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
-
-const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
+import { useTheme } from '@/hooks/use-theme';
+import { formatDate } from '@/utils/format';
 
 type FeedItem = CheckIn & {
   id: string;
@@ -35,6 +38,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
 
   const router = useRouter();
+  const theme = useTheme();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -51,7 +55,7 @@ export default function HomeScreen() {
         setFollowingIds(snapshot.docs.map((docItem) => docItem.id));
       },
       (error) => {
-        console.log('Takip listesi alinamadi:', error.message);
+        console.log('Takip listesi alınamadı:', error.message);
       }
     );
   }, [user]);
@@ -101,16 +105,11 @@ export default function HomeScreen() {
         setAllFeedItems(combined);
       })
       .catch((error) => {
-        console.log('Akis yuklenemedi:', error.message);
+        console.log('Akış yüklenemedi:', error.message);
       })
       .finally(() => {
         setLoading(false);
       });
-  }
-
-  function formatDate(timestamp: CheckIn['createdAt']) {
-    if (!timestamp?.toDate) return '...';
-    return timestamp.toDate().toLocaleDateString('tr-TR');
   }
 
   const displayedItems =
@@ -128,87 +127,49 @@ export default function HomeScreen() {
           ListHeaderComponent={
             <>
               <View style={styles.headerRow}>
-                <View>
-                  <ThemedText type="title">Gezgin Rotalar</ThemedText>
-                  <ThemedText style={styles.headerSubtitle}>FEED</ThemedText>
-                </View>
+                <ThemedText type="subtitle">Gezgin Rotalar</ThemedText>
+                <ThemedText type="caption" themeColor="textSecondary" style={styles.headerSubtitle}>
+                  AKIŞ
+                </ThemedText>
               </View>
 
               <View style={styles.tabRow}>
-                <Pressable
-                  onPress={() => setMode('kesfet')}
-                  style={[
-                    styles.tabButton,
-                    mode === 'kesfet' && styles.tabButtonActive,
-                  ]}
-                >
-                  <ThemedText
-                    style={[
-                      styles.tabText,
-                      mode === 'kesfet' && styles.tabTextActive,
-                    ]}
-                  >
-                    Kesfet
-                  </ThemedText>
-                </Pressable>
-                <Pressable
+                <Chip label="Keşfet" selected={mode === 'kesfet'} onPress={() => setMode('kesfet')} />
+                <Chip
+                  label="Takip Edilenler"
+                  selected={mode === 'takip'}
                   onPress={() => setMode('takip')}
-                  style={[
-                    styles.tabButton,
-                    mode === 'takip' && styles.tabButtonActive,
-                  ]}
-                >
-                  <ThemedText
-                    style={[
-                      styles.tabText,
-                      mode === 'takip' && styles.tabTextActive,
-                    ]}
-                  >
-                    Takip Edilenler
-                  </ThemedText>
-                </Pressable>
+                />
               </View>
             </>
           }
           renderItem={({ item }) => (
-            <View style={styles.postCard}>
+            <Card style={styles.postCard}>
               <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
-                <View style={styles.postAvatar} />
+                <View style={[styles.postAvatar, { backgroundColor: theme.highlight }]} />
                 <View style={styles.postHeaderText}>
                   <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
-                  <ThemedText style={styles.postMeta}>
-                    {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} -{' '}
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
                     {formatDate(item.createdAt)}
                   </ThemedText>
                 </View>
               </Pressable>
 
-              <View style={styles.locationBadge}>
-                <ThemedText style={styles.locationBadgeText}>
-                  {item.locationName}
-                </ThemedText>
-              </View>
+              <Tag label={item.locationName} tone="accent" />
 
-              {item.note ? (
-                <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
-              ) : null}
+              {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
 
-              {item.points ? (
-                <View style={styles.pointsTag}>
-                  <ThemedText style={styles.pointsTagText}>
-                    +{item.points} puan
-                  </ThemedText>
-                </View>
-              ) : null}
-            </View>
+              {item.points ? <Tag label={`+${item.points} puan`} /> : null}
+            </Card>
           )}
           ListEmptyComponent={
-            <ThemedText style={styles.emptyText}>
+            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
               {loading
-                ? 'Yukleniyor...'
+                ? 'Yükleniyor...'
                 : mode === 'takip'
-                ? 'Henuz kimseyi takip etmiyorsun. Lider Tablosu uzerinden birilerini takip edebilirsin.'
-                : 'Henuz kimse check-in yapmamis. Ilk check-ini sen yap!'}
+                  ? 'Takip ettiğin kimsenin check-in\'i yok. Lider tablosundan birilerini takip edebilirsin.'
+                  : 'Henüz kimse check-in yapmamış. İlk check-in\'i sen yap!'}
             </ThemedText>
           }
         />
@@ -225,59 +186,12 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
   },
   headerRow: { marginBottom: Spacing.three },
-  headerSubtitle: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  tabRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.three },
-  tabButton: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  tabButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  tabText: { fontSize: 13 },
-  tabTextActive: { color: '#fff', fontWeight: '700' },
+  headerSubtitle: { letterSpacing: 1 },
+  tabRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
-  postCard: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    padding: Spacing.three,
-    gap: 8,
-  },
+  postCard: { gap: Spacing.two },
   postHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  postAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F59E0B',
-  },
+  postAvatar: { width: 36, height: 36, borderRadius: 18 },
   postHeaderText: { flex: 1 },
-  postMeta: { fontSize: 11, color: '#94A3B8' },
-  locationBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#CCFBF1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  locationBadgeText: { fontSize: 13, color: '#0D9488', fontWeight: '600' },
-  postCaption: { fontSize: 13, lineHeight: 18 },
-  pointsTag: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFF1EC',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  pointsTagText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
-  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
+  emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

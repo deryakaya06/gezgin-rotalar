@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import {
   collection,
   doc,
@@ -15,17 +15,17 @@ import {
 import { COLLECTIONS, type CheckIn, type UserProfile, type WithId } from '@repo/shared';
 
 import { FollowButton } from '@/components/follow-button';
-import { useFollow } from '@/hooks/use-follow';
 import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BackButton } from '@/components/ui/back-button';
+import { Card } from '@/components/ui/card';
 import { Spacing } from '@/constants/theme';
 import { db } from '@/firebase';
-
-const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
+import { useFollow } from '@/hooks/use-follow';
+import { formatDate } from '@/utils/format';
 
 export default function UserProfileScreen() {
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -61,14 +61,9 @@ export default function UserProfileScreen() {
         );
       })
       .catch((error) => {
-        console.log('Check-inler alinamadi:', error.message);
+        console.log('Check-in\'ler alınamadı:', error.message);
       });
   }, [id]);
-
-  function formatDate(timestamp: CheckIn['createdAt']) {
-    if (!timestamp?.toDate) return '...';
-    return timestamp.toDate().toLocaleDateString('tr-TR');
-  }
 
   return (
     <ThemedView style={styles.container}>
@@ -79,12 +74,12 @@ export default function UserProfileScreen() {
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Pressable onPress={() => router.back()}>
-                <ThemedText style={styles.backText}>{'< Geri'}</ThemedText>
-              </Pressable>
+              <BackButton />
 
               {notFound ? (
-                <ThemedText style={styles.emptyText}>Kullanıcı bulunamadı.</ThemedText>
+                <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                  Kullanıcı bulunamadı.
+                </ThemedText>
               ) : (
                 <>
                   <ProfileSummary uid={id} profile={profile} followRefreshKey={isFollowing}>
@@ -98,15 +93,19 @@ export default function UserProfileScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <Card style={styles.card}>
               <ThemedText type="defaultSemiBold">{item.locationName}</ThemedText>
-              <ThemedText style={styles.cardDate}>{formatDate(item.createdAt)}</ThemedText>
-              {item.note ? <ThemedText style={styles.cardNote}>{item.note}</ThemedText> : null}
-            </View>
+              <ThemedText type="caption" themeColor="textSecondary">
+                {formatDate(item.createdAt)}
+              </ThemedText>
+              {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
+            </Card>
           )}
           ListEmptyComponent={
             notFound ? null : (
-              <ThemedText style={styles.emptyText}>Henüz check-in yok.</ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                Henüz check-in yok.
+              </ThemedText>
             )
           }
         />
@@ -123,17 +122,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
   },
   header: { gap: Spacing.four, marginBottom: Spacing.three },
-  backText: { color: COLORS.primary, fontWeight: '600' },
   followButtonWrap: { alignSelf: 'stretch', marginTop: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
-  card: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: Spacing.three,
-    gap: 4,
-  },
-  cardDate: { fontSize: 12, color: '#94A3B8' },
-  cardNote: { fontSize: 13 },
-  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
+  card: { gap: Spacing.one },
+  emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

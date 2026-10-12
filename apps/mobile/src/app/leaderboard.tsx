@@ -8,14 +8,15 @@ import { COLLECTIONS, type UserProfile, type WithId } from '@repo/shared';
 import { FollowButton } from '@/components/follow-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { BackButton } from '@/components/ui/back-button';
+import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
-
-const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
+import { useTheme } from '@/hooks/use-theme';
 
 export default function LeaderboardScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { user } = useAuth();
   const currentUserId = user?.uid ?? null;
   const [users, setUsers] = useState<WithId<UserProfile>[]>([]);
@@ -36,7 +37,7 @@ export default function LeaderboardScreen() {
         setUsers(items);
       })
       .catch((error) => {
-        console.log('Liderlik tablosu hatasi:', error.message);
+        console.log('Lider tablosu yüklenemedi:', error.message);
       })
       .finally(() => {
         setLoading(false);
@@ -46,13 +47,9 @@ export default function LeaderboardScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()}>
-            <ThemedText style={styles.backText}>{'< Geri'}</ThemedText>
-          </Pressable>
-        </View>
+        <BackButton />
 
-        <ThemedText type="title" style={styles.title}>
+        <ThemedText type="subtitle" style={styles.title}>
           Lider Tablosu
         </ThemedText>
 
@@ -64,7 +61,13 @@ export default function LeaderboardScreen() {
             const isMe = item.id === currentUserId;
             return (
               <Pressable
-                style={[styles.row, isMe && styles.rowHighlight]}
+                style={({ pressed }) => [
+                  styles.row,
+                  isMe
+                    ? { borderColor: theme.primary, backgroundColor: theme.primarySoft, borderWidth: 2 }
+                    : { borderColor: theme.border },
+                  pressed && styles.pressed,
+                ]}
                 onPress={() =>
                   isMe
                     ? router.navigate('/(tabs)/profile')
@@ -75,20 +78,24 @@ export default function LeaderboardScreen() {
                   #{index + 1}
                 </ThemedText>
                 <View style={styles.rowContent}>
-                  <ThemedText type="defaultSemiBold">
+                  <ThemedText type="defaultSemiBold" numberOfLines={1}>
                     {item.displayName} {isMe ? '(Sen)' : ''}
                   </ThemedText>
-                  <ThemedText style={styles.rowSubtitle}>
+                  <ThemedText type="caption" themeColor="textSecondary">
                     {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
                   </ThemedText>
                 </View>
-                <ThemedText style={styles.points}>{item.totalPoints} puan</ThemedText>
-                <FollowButton userId={item.id} />
+                <View style={styles.rowEnd}>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    {item.totalPoints} puan
+                  </ThemedText>
+                  <FollowButton userId={item.id} />
+                </View>
               </Pressable>
             );
           }}
           ListEmptyComponent={
-            <ThemedText style={styles.emptyText}>
+            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
               {loading ? 'Yükleniyor...' : 'Henüz kimse puan kazanmamış.'}
             </ThemedText>
           }
@@ -104,26 +111,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
+    gap: Spacing.two,
   },
-  headerRow: { marginBottom: Spacing.two },
-  backText: { color: COLORS.primary, fontWeight: '600' },
-  title: { marginBottom: Spacing.three },
+  title: { marginBottom: Spacing.two },
   list: { gap: Spacing.two, paddingBottom: Spacing.four },
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
-    gap: 8,
+    gap: Spacing.three,
   },
-  rowHighlight: {
-    borderColor: COLORS.primary,
-    borderWidth: 2,
-    backgroundColor: '#FFF1EC',
-  },
-  rank: { width: 32 },
+  pressed: { opacity: 0.7 },
+  rank: { width: 36 },
   rowContent: { flex: 1 },
-  rowSubtitle: { fontSize: 11, color: '#94A3B8' },
-  points: { fontWeight: '700', color: COLORS.primary },
-  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
+  rowEnd: { alignItems: 'flex-end', gap: Spacing.one },
+  emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

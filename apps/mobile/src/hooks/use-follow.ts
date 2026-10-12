@@ -32,7 +32,7 @@ export function useFollow(targetId: string | undefined) {
     const action = isFollowing ? unfollowUser : followUser;
     action(me, targetId)
       .catch((error) => {
-        console.log('Takip islemi basarisiz:', error.message);
+        console.log('Takip işlemi başarısız:', error.message);
       })
       .finally(() => {
         setBusy(false);
