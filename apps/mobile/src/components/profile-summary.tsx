@@ -1,13 +1,11 @@
 import type { ReactNode } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { UserProfile } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Card } from '@/components/ui/card';
+import { Radius, Spacing } from '@/constants/theme';
 import { useFollowCounts } from '@/hooks/use-follow-counts';
-
-const COLORS = { border: '#E2E8F0' };
 
 const BADGES = [
   { id: 'first', emoji: '🌱', label: 'İlk Adım', min: 1 },
@@ -33,90 +31,70 @@ export function ProfileSummary({
   const checkInCount = profile?.visitCount ?? 0;
   const earnedBadges = BADGES.filter((b) => checkInCount >= b.min);
 
+  const stats = [
+    { label: 'Toplam Puan', value: profile?.totalPoints ?? 0 },
+    { label: 'Check-in', value: checkInCount },
+    { label: 'Rozet', value: earnedBadges.length },
+  ];
+
   return (
     <>
-      <ThemedView style={styles.card}>
+      <Card style={styles.card}>
         <ThemedText style={styles.avatarEmoji}>
           {profile?.accountType === 'couple' ? '💑' : '👥'}
         </ThemedText>
-        <ThemedText type="defaultSemiBold">
-          {profile?.displayName ?? 'Yükleniyor...'}
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
+        <ThemedText type="defaultSemiBold">{profile?.displayName ?? 'Yükleniyor...'}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
           {profile?.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
         </ThemedText>
-        <ThemedView style={styles.followRow}>
-          <ThemedText style={styles.followText}>
+        <View style={styles.followRow}>
+          <ThemedText type="small">
             <ThemedText type="smallBold">{followCounts.followers}</ThemedText> takipçi
           </ThemedText>
-          <ThemedText style={styles.followText}>
+          <ThemedText type="small">
             <ThemedText type="smallBold">{followCounts.following}</ThemedText> takip
           </ThemedText>
-        </ThemedView>
+        </View>
         {children}
-      </ThemedView>
+      </Card>
 
-      <ThemedView style={styles.statsRow}>
-        <ThemedView style={styles.statBox}>
-          <ThemedText type="title" style={styles.statNumber}>
-            {profile?.totalPoints ?? 0}
-          </ThemedText>
-          <ThemedText style={styles.statLabel}>Toplam Puan</ThemedText>
-        </ThemedView>
-        <ThemedView style={styles.statBox}>
-          <ThemedText type="title" style={styles.statNumber}>
-            {checkInCount}
-          </ThemedText>
-          <ThemedText style={styles.statLabel}>Check-in</ThemedText>
-        </ThemedView>
-        <ThemedView style={styles.statBox}>
-          <ThemedText type="title" style={styles.statNumber}>
-            {earnedBadges.length}
-          </ThemedText>
-          <ThemedText style={styles.statLabel}>Rozet</ThemedText>
-        </ThemedView>
-      </ThemedView>
+      <View style={styles.statsRow}>
+        {stats.map((stat) => (
+          <Card key={stat.label} style={styles.statBox}>
+            <ThemedText type="subtitle" style={styles.statNumber}>
+              {stat.value}
+            </ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary">
+              {stat.label}
+            </ThemedText>
+          </Card>
+        ))}
+      </View>
 
       {earnedBadges.length > 0 && (
-        <ThemedView style={styles.badgeRow}>
+        <View style={styles.badgeRow}>
           {earnedBadges.map((b) => (
-            <ThemedView key={b.id} style={styles.badgeItem}>
+            <View key={b.id} style={styles.badgeItem}>
               <ThemedText style={styles.badgeEmoji}>{b.emoji}</ThemedText>
-              <ThemedText style={styles.badgeLabel}>{b.label}</ThemedText>
-            </ThemedView>
+              <ThemedText type="caption" themeColor="textSecondary">
+                {b.label}
+              </ThemedText>
+            </View>
           ))}
-        </ThemedView>
+        </View>
       )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    padding: Spacing.four,
-    alignItems: 'center',
-    gap: 4,
-  },
-  avatarEmoji: { fontSize: 40, marginBottom: 8 },
-  subtitle: { color: '#94A3B8' },
+  card: { padding: Spacing.four, alignItems: 'center', gap: Spacing.one },
+  avatarEmoji: { fontSize: 40, lineHeight: 48, marginBottom: Spacing.two },
   followRow: { flexDirection: 'row', gap: Spacing.four, marginTop: Spacing.two },
-  followText: { fontSize: 14 },
   statsRow: { flexDirection: 'row', gap: Spacing.three },
-  statBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  statNumber: { fontSize: 20 },
-  statLabel: { fontSize: 11, color: '#94A3B8' },
+  statBox: { flex: 1, alignItems: 'center', borderRadius: Radius.medium },
+  statNumber: { fontSize: 22, lineHeight: 30 },
   badgeRow: { flexDirection: 'row', gap: Spacing.three, justifyContent: 'center' },
   badgeItem: { alignItems: 'center', gap: 2 },
-  badgeEmoji: { fontSize: 28 },
-  badgeLabel: { fontSize: 11, color: '#94A3B8' },
+  badgeEmoji: { fontSize: 28, lineHeight: 34 },
 });

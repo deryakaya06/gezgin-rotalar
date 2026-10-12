@@ -22,7 +22,7 @@ export function useFollowCounts(uid: string | undefined, refreshKey?: unknown) {
         setCounts({ followers: followers.data().count, following: following.data().count });
       })
       .catch((error) => {
-        console.log('Takip sayilari alinamadi:', error.message);
+        console.log('Takip sayıları alınamadı:', error.message);
       });
     // refreshKey yalnızca yeniden saymayı tetiklemek için bağımlılıkta.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,26 +1,47 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import '@/global.css';
 
 import { Platform } from 'react-native';
 
+/**
+ * Uygulamanın tek renk paleti. Ekranlar renkleri buradan useTheme() ile okur;
+ * bileşenlerde sabit renk (#...) yazılmaz.
+ */
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#0F172A',
+    textSecondary: '#64748B',
+    background: '#FFFFFF',
+    backgroundElement: '#F1F5F9',
+    backgroundSelected: '#E2E8F0',
+    border: '#E2E8F0',
+    placeholder: '#94A3B8',
+
+    primary: '#FF5733',
+    onPrimary: '#FFFFFF',
+    primarySoft: '#FFF1EC',
+    accent: '#0D9488',
+    accentSoft: '#CCFBF1',
+    highlight: '#F59E0B',
+    highlightSoft: '#FFE4D6',
+    danger: '#DC2626',
   },
   dark: {
-    text: '#ffffff',
+    text: '#F8FAFC',
+    textSecondary: '#94A3B8',
     background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    backgroundElement: '#1C1F24',
+    backgroundSelected: '#2A2E35',
+    border: '#2A2E35',
+    placeholder: '#64748B',
+
+    primary: '#FF6B4A',
+    onPrimary: '#FFFFFF',
+    primarySoft: '#3A1D15',
+    accent: '#2DD4BF',
+    accentSoft: '#12322F',
+    highlight: '#FBBF24',
+    highlightSoft: '#3A2A12',
+    danger: '#F87171',
   },
 } as const;
 
@@ -63,3 +84,10 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+export const Radius = {
+  small: 8,
+  medium: 12,
+  large: 16,
+  pill: 999,
+} as const;

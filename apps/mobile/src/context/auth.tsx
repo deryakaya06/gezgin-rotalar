@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!migrating) {
             migrating = true;
             migrateLegacyProfile(user.uid, user.email, data).catch((error) => {
-              console.log('Profil tasinamadi:', error.message);
+              console.log('Profil taşınamadı:', error.message);
             });
           }
           return;
