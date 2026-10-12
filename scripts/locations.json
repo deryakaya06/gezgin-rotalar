@@ -1,0 +1,422 @@
+[
+  {
+    "id": "galata-kulesi",
+    "name": "Galata Kulesi",
+    "district": "Beyoğlu",
+    "category": "Tarihi",
+    "coordinates": {
+      "latitude": 41.0256,
+      "longitude": 28.9742
+    },
+    "rating": 4.6,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Ceneviz döneminden kalan kule; terasından Haliç ve Boğaz manzarası."
+  },
+  {
+    "id": "istiklal-caddesi",
+    "name": "İstiklal Caddesi",
+    "district": "Beyoğlu",
+    "category": "Sokak",
+    "coordinates": {
+      "latitude": 41.034,
+      "longitude": 28.9784
+    },
+    "rating": 4.5,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Nostaljik tramvayı, pasajları ve kitapçılarıyla şehrin en canlı caddesi."
+  },
+  {
+    "id": "pera-muzesi",
+    "name": "Pera Müzesi",
+    "district": "Beyoğlu",
+    "category": "Müze",
+    "coordinates": {
+      "latitude": 41.0317,
+      "longitude": 28.975
+    },
+    "rating": 4.6,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Kaplumbağa Terbiyecisi'nin evi; Oryantalist resim ve değişen sergiler."
+  },
+  {
+    "id": "istanbul-modern",
+    "name": "İstanbul Modern",
+    "district": "Beyoğlu",
+    "category": "Müze",
+    "coordinates": {
+      "latitude": 41.0265,
+      "longitude": 28.983
+    },
+    "rating": 4.6,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Karaköy sahilinde çağdaş sanat müzesi."
+  },
+  {
+    "id": "miniaturk",
+    "name": "Miniatürk",
+    "district": "Beyoğlu",
+    "category": "Park",
+    "coordinates": {
+      "latitude": 41.0605,
+      "longitude": 28.9488
+    },
+    "rating": 4.4,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Türkiye'nin simge yapılarının minyatürlerinden oluşan açık hava müzesi."
+  },
+  {
+    "id": "ayasofya",
+    "name": "Ayasofya",
+    "district": "Fatih",
+    "category": "Tarihi",
+    "coordinates": {
+      "latitude": 41.0086,
+      "longitude": 28.9802
+    },
+    "rating": 4.8,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Bin beş yüz yıllık kubbesiyle şehrin simgesi."
+  },
+  {
+    "id": "sultanahmet-camii",
+    "name": "Sultanahmet Camii",
+    "district": "Fatih",
+    "category": "Tarihi",
+    "coordinates": {
+      "latitude": 41.0054,
+      "longitude": 28.9768
+    },
+    "rating": 4.8,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Altı minaresi ve mavi çinileriyle bilinen Mavi Cami."
+  },
+  {
+    "id": "topkapi-sarayi",
+    "name": "Topkapı Sarayı",
+    "district": "Fatih",
+    "category": "Müze",
+    "coordinates": {
+      "latitude": 41.0115,
+      "longitude": 28.9834
+    },
+    "rating": 4.7,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Osmanlı padişahlarının yaklaşık dört yüz yıl yaşadığı saray."
+  },
+  {
+    "id": "yerebatan-sarnici",
+    "name": "Yerebatan Sarnıcı",
+    "district": "Fatih",
+    "category": "Tarihi",
+    "coordinates": {
+      "latitude": 41.0084,
+      "longitude": 28.9779
+    },
+    "rating": 4.6,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Medusa başlı sütunlarıyla yer altındaki Bizans sarnıcı."
+  },
+  {
+    "id": "kapalicarsi",
+    "name": "Kapalıçarşı",
+    "district": "Fatih",
+    "category": "Çarşı",
+    "coordinates": {
+      "latitude": 41.0107,
+      "longitude": 28.9681
+    },
+    "rating": 4.4,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Dünyanın en eski ve büyük kapalı çarşılarından biri."
+  },
+  {
+    "id": "misir-carsisi",
+    "name": "Mısır Çarşısı",
+    "district": "Fatih",
+    "category": "Çarşı",
+    "coordinates": {
+      "latitude": 41.0166,
+      "longitude": 28.9706
+    },
+    "rating": 4.5,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Baharat, lokum ve kuruyemiş kokularıyla Eminönü'nün tarihi çarşısı."
+  },
+  {
+    "id": "suleymaniye-camii",
+    "name": "Süleymaniye Camii",
+    "district": "Fatih",
+    "category": "Tarihi",
+    "coordinates": {
+      "latitude": 41.0162,
+      "longitude": 28.9639
+    },
+    "rating": 4.9,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Mimar Sinan'ın eseri; avlusundan Haliç manzarası."
+  },
+  {
+    "id": "galata-koprusu",
+    "name": "Galata Köprüsü",
+    "district": "Fatih",
+    "category": "Manzara",
+    "coordinates": {
+      "latitude": 41.02,
+      "longitude": 28.9733
+    },
+    "rating": 4.5,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Oltacıları ve balık ekmekçileriyle Haliç'in iki yakasını bağlar."
+  },
+  {
+    "id": "balat",
+    "name": "Balat",
+    "district": "Fatih",
+    "category": "Sokak",
+    "coordinates": {
+      "latitude": 41.0294,
+      "longitude": 28.9488
+    },
+    "rating": 4.5,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Renkli evleri, antikacıları ve kafeleriyle tarihi semt."
+  },
+  {
+    "id": "dolmabahce-sarayi",
+    "name": "Dolmabahçe Sarayı",
+    "district": "Beşiktaş",
+    "category": "Müze",
+    "coordinates": {
+      "latitude": 41.0391,
+      "longitude": 29.0003
+    },
+    "rating": 4.7,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Boğaz kıyısında 19. yüzyıl Osmanlı sarayı."
+  },
+  {
+    "id": "ortakoy-camii",
+    "name": "Ortaköy Camii",
+    "district": "Beşiktaş",
+    "category": "Manzara",
+    "coordinates": {
+      "latitude": 41.0473,
+      "longitude": 29.027
+    },
+    "rating": 4.7,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Köprü manzarasıyla Boğaz'ın en çok fotoğraflanan camisi."
+  },
+  {
+    "id": "bebek-sahili",
+    "name": "Bebek Sahili",
+    "district": "Beşiktaş",
+    "category": "Manzara",
+    "coordinates": {
+      "latitude": 41.077,
+      "longitude": 29.0435
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Boğaz kıyısında yürüyüş ve kahve molası için."
+  },
+  {
+    "id": "yildiz-parki",
+    "name": "Yıldız Parkı",
+    "district": "Beşiktaş",
+    "category": "Park",
+    "coordinates": {
+      "latitude": 41.048,
+      "longitude": 29.013
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Şehrin ortasında köşkleri ve havuzlarıyla büyük koru."
+  },
+  {
+    "id": "moda-sahili",
+    "name": "Moda Sahili",
+    "district": "Kadıköy",
+    "category": "Park",
+    "coordinates": {
+      "latitude": 40.981,
+      "longitude": 29.026
+    },
+    "rating": 4.7,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Çimlerde gün batımı izlemek için Anadolu yakasının favorisi."
+  },
+  {
+    "id": "kadikoy-carsi",
+    "name": "Kadıköy Çarşı",
+    "district": "Kadıköy",
+    "category": "Çarşı",
+    "coordinates": {
+      "latitude": 40.9902,
+      "longitude": 29.0257
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Balıkçıları, şarküterileri ve meyhaneleriyle canlı çarşı."
+  },
+  {
+    "id": "yeldegirmeni",
+    "name": "Yeldeğirmeni",
+    "district": "Kadıköy",
+    "category": "Sokak",
+    "coordinates": {
+      "latitude": 40.9945,
+      "longitude": 29.028
+    },
+    "rating": 4.5,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Duvar resimleri ve küçük kafeleriyle sakin bir semt."
+  },
+  {
+    "id": "kiz-kulesi",
+    "name": "Kız Kulesi",
+    "district": "Üsküdar",
+    "category": "Manzara",
+    "coordinates": {
+      "latitude": 41.0211,
+      "longitude": 29.0041
+    },
+    "rating": 4.5,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Boğaz'ın girişinde küçük adacık üzerindeki efsanevi kule."
+  },
+  {
+    "id": "camlica-tepesi",
+    "name": "Büyük Çamlıca Tepesi",
+    "district": "Üsküdar",
+    "category": "Manzara",
+    "coordinates": {
+      "latitude": 41.0277,
+      "longitude": 29.0687
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Şehrin iki yakasını birden gören en yüksek tepelerinden."
+  },
+  {
+    "id": "buyukada",
+    "name": "Büyükada",
+    "district": "Adalar",
+    "category": "Ada",
+    "coordinates": {
+      "latitude": 40.874,
+      "longitude": 29.129
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Köşkleri, çam ormanları ve bisiklet turlarıyla adaların en büyüğü."
+  },
+  {
+    "id": "heybeliada",
+    "name": "Heybeliada",
+    "district": "Adalar",
+    "category": "Ada",
+    "coordinates": {
+      "latitude": 40.877,
+      "longitude": 29.096
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Daha sakin; koyları ve yürüyüş yollarıyla bilinir."
+  },
+  {
+    "id": "emirgan-korusu",
+    "name": "Emirgan Korusu",
+    "district": "Sarıyer",
+    "category": "Park",
+    "coordinates": {
+      "latitude": 41.108,
+      "longitude": 29.0525
+    },
+    "rating": 4.7,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Nisan'da lale festivaliyle ünlü Boğaz korusu."
+  },
+  {
+    "id": "rumeli-hisari",
+    "name": "Rumeli Hisarı",
+    "district": "Sarıyer",
+    "category": "Tarihi",
+    "coordinates": {
+      "latitude": 41.0849,
+      "longitude": 29.056
+    },
+    "rating": 4.6,
+    "isFree": false,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Fatih Sultan Mehmet'in İstanbul'un fethinden önce yaptırdığı hisar."
+  },
+  {
+    "id": "pierre-loti",
+    "name": "Pierre Loti Tepesi",
+    "district": "Eyüpsultan",
+    "category": "Manzara",
+    "coordinates": {
+      "latitude": 41.056,
+      "longitude": 28.934
+    },
+    "rating": 4.5,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "Teleferikle çıkılan, Haliç'e bakan tepe ve çay bahçesi."
+  }
+]
