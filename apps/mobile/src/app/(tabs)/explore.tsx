@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
+import { COLLECTIONS, type Location, type WithId } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -34,26 +35,20 @@ const QUICK_CATEGORIES = [
   { id: 'q4', label: 'Adalar' },
 ];
 
-type Location = {
-  id: string;
-  name: string;
-  description: string;
-};
-
 export default function ExploreScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('Tumu');
   const [search, setSearch] = useState('');
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<WithId<Location>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDocs(collection(db, 'locations'))
+    getDocs(collection(db, COLLECTIONS.locations))
       .then((snapshot) => {
         const items = snapshot.docs.map((docItem) => ({
           id: docItem.id,
           ...docItem.data(),
-        })) as Location[];
+        })) as WithId<Location>[];
         setLocations(items);
       })
       .catch((error) => {

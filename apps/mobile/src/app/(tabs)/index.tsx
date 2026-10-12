@@ -1,68 +1,72 @@
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useRouter } from 'expo-router';
 import {
   collection,
   doc,
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
 } from 'firebase/firestore';
+import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { auth, db } from '@/firebase';
+import { useAuth } from '@/context/auth';
+import { db } from '@/firebase';
 
 const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
 
-type FeedItem = {
+type FeedItem = CheckIn & {
   id: string;
-  locationName: string;
-  note: string;
-  points: number;
-  createdAt: any;
-  userEmail: string;
-  accountType: string;
-  userId: string;
+  displayName: string;
+  accountType: UserProfile['accountType'];
 };
 
 export default function HomeScreen() {
   const [mode, setMode] = useState<'kesfet' | 'takip'>('kesfet');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [allFeedItems, setAllFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      setCurrentUserId(user.uid);
-      loadFollowing(user.uid);
-      loadFeed();
-    });
-    return () => unsubscribe();
-  }, []);
+  const router = useRouter();
+  const { user } = useAuth();
 
-  function loadFollowing(uid: string) {
-    getDocs(collection(db, 'users', uid, 'following'))
-      .then((snapshot) => {
+  useEffect(() => {
+    if (!user) return;
+    loadFeed();
+  }, [user]);
+
+  // Başka ekranda takip edilen/bırakılan kullanıcılar "Takip Edilenler" sekmesine hemen yansısın.
+  useEffect(() => {
+    if (!user) return;
+    return onSnapshot(
+      collection(db, COLLECTIONS.users, user.uid, 'following'),
+      (snapshot) => {
         setFollowingIds(snapshot.docs.map((docItem) => docItem.id));
-      })
-      .catch((error) => {
+      },
+      (error) => {
         console.log('Takip listesi alinamadi:', error.message);
-      });
+      }
+    );
+  }, [user]);
+
+  function openProfile(userId: string) {
+    if (userId === user?.uid) {
+      router.navigate('/(tabs)/profile');
+    } else {
+      router.push({ pathname: '/user/[id]', params: { id: userId } });
+    }
   }
 
   function loadFeed() {
     const q = query(
-      collection(db, 'check_ins'),
+      collection(db, COLLECTIONS.checkIns),
       orderBy('createdAt', 'desc'),
       limit(30)
     );
@@ -71,32 +75,27 @@ export default function HomeScreen() {
       .then(async (snapshot) => {
         const rawItems = snapshot.docs.map((docItem) => ({
           id: docItem.id,
-          ...docItem.data(),
-        })) as any[];
+          ...(docItem.data() as CheckIn),
+        }));
 
         const uniqueUserIds = Array.from(
           new Set(rawItems.map((item) => item.userId))
         );
 
         const userDocs = await Promise.all(
-          uniqueUserIds.map((uid) => getDoc(doc(db, 'users', uid)))
+          uniqueUserIds.map((uid) => getDoc(doc(db, COLLECTIONS.users, uid)))
         );
 
-        const userMap: Record<string, any> = {};
+        const userMap: Record<string, Partial<UserProfile> | null> = {};
         userDocs.forEach((userSnap, index) => {
           userMap[uniqueUserIds[index]] = userSnap.exists()
-            ? userSnap.data()
+            ? (userSnap.data() as Partial<UserProfile>)
             : null;
         });
 
         const combined: FeedItem[] = rawItems.map((item) => ({
-          id: item.id,
-          locationName: item.locationName,
-          note: item.note,
-          points: item.points,
-          createdAt: item.createdAt,
-          userId: item.userId,
-          userEmail: userMap[item.userId]?.email ?? 'Bir Gezgin',
+          ...item,
+          displayName: userMap[item.userId]?.displayName ?? 'Bir Gezgin',
           accountType: userMap[item.userId]?.accountType ?? 'friends',
         }));
         setAllFeedItems(combined);
@@ -109,7 +108,7 @@ export default function HomeScreen() {
       });
   }
 
-  function formatDate(timestamp: any) {
+  function formatDate(timestamp: CheckIn['createdAt']) {
     if (!timestamp?.toDate) return '...';
     return timestamp.toDate().toLocaleDateString('tr-TR');
   }
@@ -173,17 +172,16 @@ export default function HomeScreen() {
           }
           renderItem={({ item }) => (
             <View style={styles.postCard}>
-              <View style={styles.postHeaderRow}>
+              <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
                 <View style={styles.postAvatar} />
                 <View style={styles.postHeaderText}>
-                  <ThemedText type="defaultSemiBold">
-                    {item.accountType === 'couple' ? 'Bir Cift' : 'Bir Arkadas Grubu'}
-                  </ThemedText>
+                  <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
                   <ThemedText style={styles.postMeta}>
-                    {item.userEmail} - {formatDate(item.createdAt)}
+                    {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} -{' '}
+                    {formatDate(item.createdAt)}
                   </ThemedText>
                 </View>
-              </View>
+              </Pressable>
 
               <View style={styles.locationBadge}>
                 <ThemedText style={styles.locationBadgeText}>
@@ -195,11 +193,13 @@ export default function HomeScreen() {
                 <ThemedText style={styles.postCaption}>{item.note}</ThemedText>
               ) : null}
 
-              <View style={styles.pointsTag}>
-                <ThemedText style={styles.pointsTagText}>
-                  +{item.points} puan
-                </ThemedText>
-              </View>
+              {item.points ? (
+                <View style={styles.pointsTag}>
+                  <ThemedText style={styles.pointsTagText}>
+                    +{item.points} puan
+                  </ThemedText>
+                </View>
+              ) : null}
             </View>
           )}
           ListEmptyComponent={
