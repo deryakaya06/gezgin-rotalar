@@ -1,0 +1,184 @@
+import { useEffect, useState } from 'react';
+import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
+import {
+  DUPLICATE_CHECKIN_WINDOW_HOURS,
+  POINTS_PER_CHECKIN,
+  type Location,
+  type WithId,
+} from '@repo/shared';
+
+import { LocationMap } from '@/components/location-map';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { BackButton } from '@/components/ui/back-button';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Tag } from '@/components/ui/tag';
+import { TextField } from '@/components/ui/text-field';
+import { Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/auth';
+import { useTheme } from '@/hooks/use-theme';
+import { createCheckIn } from '@/services/checkins';
+import { directionsUrl, fetchLocation } from '@/services/locations';
+
+export default function LocationDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
+  const theme = useTheme();
+
+  const [location, setLocation] = useState<WithId<Location> | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'notFound'>('loading');
+  const [note, setNote] = useState('');
+  const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLocation(id)
+      .then((result) => {
+        if (cancelled) return;
+        setLocation(result);
+        setStatus(result ? 'ready' : 'notFound');
+      })
+      .catch((error) => {
+        console.log('Mekan yüklenemedi:', error.message);
+        if (!cancelled) setStatus('notFound');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  function handleCheckIn() {
+    if (!user || !location) return;
+
+    setSaving(true);
+    setMessage('');
+
+    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim())
+      .then((points) => {
+        setMessage(
+          points > 0
+            ? `Check-in başarılı! +${points} puan kazandın.`
+            : `Check-in kaydedildi. Bu mekana son ${DUPLICATE_CHECKIN_WINDOW_HOURS} saatte zaten check-in yaptığın için puan verilmedi.`
+        );
+        setNote('');
+      })
+      .catch((error) => {
+        setMessage('Hata: ' + error.message);
+      })
+      .finally(() => {
+        setSaving(false);
+      });
+  }
+
+  if (status !== 'ready' || !location) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={[styles.safeArea, styles.content]}>
+          <BackButton />
+          <ThemedText themeColor="textSecondary" style={styles.centered}>
+            {status === 'loading' ? 'Yükleniyor...' : 'Mekan bulunamadı.'}
+          </ThemedText>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  const coordinates = location.coordinates;
+
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <BackButton />
+
+          <View style={styles.titleBlock}>
+            <ThemedText type="subtitle">{location.name}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {[location.category, location.district].filter(Boolean).join(' · ')}
+              {location.rating ? (
+                <ThemedText type="smallBold" style={{ color: theme.highlight }}>
+                  {'  '}★ {location.rating.toFixed(1)}
+                </ThemedText>
+              ) : null}
+            </ThemedText>
+            <View style={styles.tagRow}>
+              {location.isSponsored ? <Tag label="Sponsorlu" /> : null}
+              {location.isFree ? <Tag label="Ücretsiz Giriş" tone="accent" /> : null}
+            </View>
+          </View>
+
+          <ThemedText>{location.description}</ThemedText>
+
+          {location.isSponsored && location.sponsorInfo ? (
+            <Card style={[styles.sponsorCard, { borderColor: theme.highlight }]}>
+              <ThemedText type="smallBold">{location.sponsorInfo.name}</ThemedText>
+              {location.sponsorInfo.offer ? (
+                <ThemedText type="small">{location.sponsorInfo.offer}</ThemedText>
+              ) : null}
+            </Card>
+          ) : null}
+
+          {coordinates ? (
+            <>
+              <LocationMap
+                locations={[location]}
+                interactive={false}
+                initialRegion={{ ...coordinates, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+                style={styles.map}
+              />
+              <Button
+                title="Yol Tarifi Al"
+                variant="outline"
+                onPress={() => Linking.openURL(directionsUrl(location, Platform.OS))}
+              />
+            </>
+          ) : null}
+
+          <View style={styles.checkIn}>
+            <ThemedText type="smallBold">Not (isteğe bağlı)</ThemedText>
+            <TextField
+              style={styles.noteInput}
+              placeholder="Bu mekanda neler yaşadın?"
+              value={note}
+              onChangeText={setNote}
+              maxLength={500}
+              multiline
+            />
+            <Button
+              title={saving ? 'Kaydediliyor...' : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`}
+              onPress={handleCheckIn}
+              disabled={saving}
+            />
+            {message ? (
+              <ThemedText type="small" style={styles.centered}>
+                {message}
+              </ThemedText>
+            ) : null}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  content: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.five,
+    gap: Spacing.three,
+  },
+  titleBlock: { gap: Spacing.one },
+  tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
+  sponsorCard: { gap: Spacing.one },
+  map: { height: 180 },
+  checkIn: { gap: Spacing.two, marginTop: Spacing.three },
+  noteInput: { minHeight: 96, textAlignVertical: 'top' },
+  centered: { textAlign: 'center' },
+});

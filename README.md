@@ -11,6 +11,7 @@
 | `packages/ui`, `packages/eslint-config`, `packages/typescript-config` | Turborepo paketleri |
 | `firestore.rules`, `firestore.indexes.json` | Firestore güvenlik kuralları ve indexler |
 | `firestore-tests` | Kuralların emülatör testleri |
+| `scripts` | Başlangıç mekan verisi (`locations.json`) ve yükleme betiği |
 
 ## Başlangıç
 
@@ -31,6 +32,15 @@ cd firestore-tests && npm install && npm test
 
 # Kuralları ve indexleri yayınlama
 npx firebase-tools deploy --only firestore
+```
+
+## Mekanlar
+
+`locations` koleksiyonuna yalnızca admin yazabilir. Bir hesabı admin yapmak için Firebase Console'da o hesabın `users/{uid}` dokümanına `role` = `admin` (string) alanı ekle. Kullanıcılar bu alanı kendileri ekleyemez.
+
+```sh
+# scripts/locations.json içindeki mekanları yükler/günceller (tekrar çalıştırmak güvenli)
+ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run seed:locations
 ```
 
 ## Tema
