@@ -1,31 +1,39 @@
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/auth';
 
 export default function WelcomeScreen() {
+  const router = useRouter();
+  const { profile } = useAuth();
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title" style={styles.title}>
-          Hoş geldin! 🎉
+        <ThemedText type="subtitle" style={styles.centered}>
+          Hoş geldin{profile ? `, ${profile.displayName}` : ''}! 🎉
         </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Gezgin Rotalar'a başarıyla katıldın. Maceraya hazır mısın?
+        <ThemedText themeColor="textSecondary" style={styles.centered}>
+          {"Gezgin Rotalar'a başarıyla katıldın. Maceraya hazır mısın?"}
         </ThemedText>
+
+        <Button
+          style={styles.button}
+          title="Keşfetmeye Başla"
+          onPress={() => router.replace('/(tabs)')}
+        />
       </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1 },
   safeArea: {
     flex: 1,
     justifyContent: 'center',
@@ -33,10 +41,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
-  title: {
-    textAlign: 'center',
-  },
-  subtitle: {
-    textAlign: 'center',
-  },
+  centered: { textAlign: 'center' },
+  button: { marginTop: Spacing.four, alignSelf: 'stretch' },
 });

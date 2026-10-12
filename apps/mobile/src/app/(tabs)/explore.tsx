@@ -1,63 +1,47 @@
 import { useEffect, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
+import { COLLECTIONS, type Location, type WithId } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Chip } from '@/components/ui/chip';
+import { TextField } from '@/components/ui/text-field';
+import { Radius, Spacing } from '@/constants/theme';
 import { db } from '@/firebase';
+import { useTheme } from '@/hooks/use-theme';
 
-const COLORS = {
-  primary: '#FF5733',
-  secondary: '#F59E0B',
-  tertiary: '#0D9488',
-  neutral: '#1E293B',
-  border: '#E2E8F0',
-};
-
-const FILTERS = ['Tumu', 'Yuksek Puanlar (4.5+)', 'Ucretsiz Giris'];
+const FILTERS = ['Tümü', 'Yüksek Puanlı (4.5+)', 'Ücretsiz Giriş'];
 
 const QUICK_CATEGORIES = [
-  { id: 'q0', label: 'Senin Icin' },
+  { id: 'q0', label: 'Senin İçin' },
   { id: 'q1', label: 'Galata' },
-  { id: 'q2', label: 'Bogaz Keyfi' },
-  { id: 'q3', label: 'Kadikoy' },
+  { id: 'q2', label: 'Boğaz Keyfi' },
+  { id: 'q3', label: 'Kadıköy' },
   { id: 'q4', label: 'Adalar' },
 ];
 
-type Location = {
-  id: string;
-  name: string;
-  description: string;
-};
-
 export default function ExploreScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState('Tumu');
+  const theme = useTheme();
+  const [activeFilter, setActiveFilter] = useState(FILTERS[0]);
   const [search, setSearch] = useState('');
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<WithId<Location>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDocs(collection(db, 'locations'))
+    getDocs(collection(db, COLLECTIONS.locations))
       .then((snapshot) => {
         const items = snapshot.docs.map((docItem) => ({
           id: docItem.id,
           ...docItem.data(),
-        })) as Location[];
+        })) as WithId<Location>[];
         setLocations(items);
       })
       .catch((error) => {
-        console.log('Mekanlar yuklenemedi:', error.message);
+        console.log('Mekanlar yüklenemedi:', error.message);
       })
       .finally(() => {
         setLoading(false);
@@ -65,7 +49,7 @@ export default function ExploreScreen() {
   }, []);
 
   const filteredLocations = locations.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
+    item.name.toLocaleLowerCase('tr').includes(search.trim().toLocaleLowerCase('tr'))
   );
 
   return (
@@ -77,44 +61,28 @@ export default function ExploreScreen() {
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <>
-              <ThemedText type="title" style={styles.title}>
-                Sehri Kesfet
+              <ThemedText type="subtitle" style={styles.title}>
+                Şehri Keşfet
               </ThemedText>
 
-              <View style={styles.searchBar}>
-                <ThemedText style={styles.searchIcon}>#</ThemedText>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Mekan ara..."
-                  placeholderTextColor="#94A3B8"
-                  value={search}
-                  onChangeText={setSearch}
-                />
-              </View>
+              <TextField
+                style={styles.search}
+                placeholder="Mekan ara..."
+                value={search}
+                onChangeText={setSearch}
+                returnKeyType="search"
+                clearButtonMode="while-editing"
+              />
 
               <View style={styles.filterRow}>
-                {FILTERS.map((filter) => {
-                  const isActive = filter === activeFilter;
-                  return (
-                    <Pressable
-                      key={filter}
-                      onPress={() => setActiveFilter(filter)}
-                      style={[
-                        styles.filterChip,
-                        isActive && styles.filterChipActive,
-                      ]}
-                    >
-                      <ThemedText
-                        style={[
-                          styles.filterText,
-                          isActive && styles.filterTextActive,
-                        ]}
-                      >
-                        {filter}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
+                {FILTERS.map((filter) => (
+                  <Chip
+                    key={filter}
+                    label={filter}
+                    selected={filter === activeFilter}
+                    onPress={() => setActiveFilter(filter)}
+                  />
+                ))}
               </View>
 
               <ScrollView
@@ -125,8 +93,8 @@ export default function ExploreScreen() {
               >
                 {QUICK_CATEGORIES.map((item) => (
                   <View key={item.id} style={styles.avatarItem}>
-                    <View style={styles.avatarCircle} />
-                    <ThemedText style={styles.avatarLabel}>
+                    <View style={[styles.avatarCircle, { backgroundColor: theme.highlightSoft }]} />
+                    <ThemedText type="caption" style={styles.avatarLabel}>
                       {item.label}
                     </ThemedText>
                   </View>
@@ -134,16 +102,22 @@ export default function ExploreScreen() {
               </ScrollView>
 
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                Tum Mekanlar
+                Tüm Mekanlar
               </ThemedText>
               {loading ? (
-                <ThemedText style={styles.emptyText}>Yukleniyor...</ThemedText>
+                <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                  Yükleniyor...
+                </ThemedText>
               ) : null}
             </>
           }
           renderItem={({ item }) => (
             <Pressable
-              style={styles.card}
+              style={({ pressed }) => [
+                styles.card,
+                { borderColor: theme.border },
+                pressed && styles.pressed,
+              ]}
               onPress={() =>
                 router.push({
                   pathname: '/location-detail',
@@ -155,10 +129,10 @@ export default function ExploreScreen() {
                 })
               }
             >
-              <View style={styles.cardImage} />
+              <View style={[styles.cardImage, { backgroundColor: theme.highlight }]} />
               <View style={styles.cardContent}>
                 <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-                <ThemedText style={styles.cardDescription}>
+                <ThemedText type="caption" themeColor="textSecondary">
                   {item.description}
                 </ThemedText>
               </View>
@@ -166,8 +140,8 @@ export default function ExploreScreen() {
           )}
           ListEmptyComponent={
             !loading ? (
-              <ThemedText style={styles.emptyText}>
-                Mekan bulunamadi.
+              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                Mekan bulunamadı.
               </ThemedText>
             ) : null
           }
@@ -185,60 +159,28 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
   },
   title: { marginBottom: Spacing.three },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: Spacing.three,
-    gap: 8,
-  },
-  searchIcon: { fontSize: 16 },
-  searchInput: { flex: 1, fontSize: 15 },
+  search: { marginBottom: Spacing.three },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: Spacing.two,
     marginBottom: Spacing.three,
   },
-  filterChip: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  filterChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterText: { fontSize: 13 },
-  filterTextActive: { color: '#fff', fontWeight: '600' },
   avatarScroll: { marginBottom: Spacing.four },
-  avatarScrollContent: { gap: 16, paddingRight: Spacing.four },
+  avatarScrollContent: { gap: Spacing.three, paddingRight: Spacing.four },
   avatarItem: { alignItems: 'center', width: 64 },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFE4D6',
-    marginBottom: 4,
-  },
-  avatarLabel: { fontSize: 11, textAlign: 'center' },
+  avatarCircle: { width: 56, height: 56, borderRadius: 28, marginBottom: Spacing.one },
+  avatarLabel: { textAlign: 'center' },
   sectionTitle: { marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
+    borderRadius: Radius.large,
     overflow: 'hidden',
   },
-  cardImage: { width: 90, backgroundColor: COLORS.secondary },
+  pressed: { opacity: 0.7 },
+  cardImage: { width: 90 },
   cardContent: { flex: 1, padding: Spacing.three, gap: 6 },
-  cardDescription: { fontSize: 12, color: '#94A3B8' },
-  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
+  emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });
