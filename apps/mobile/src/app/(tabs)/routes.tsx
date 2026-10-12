@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { onAuthStateChanged } from 'firebase/auth';
 import {
   collection,
   onSnapshot,
@@ -9,11 +8,13 @@ import {
   query,
   where,
 } from 'firebase/firestore';
+import { COLLECTIONS, type CheckIn, type WithId } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { auth, db } from '@/firebase';
+import { useAuth } from '@/context/auth';
+import { db } from '@/firebase';
 
 const COLORS = {
   primary: '#FF5733',
@@ -21,57 +22,40 @@ const COLORS = {
   border: '#E2E8F0',
 };
 
-type CheckIn = {
-  id: string;
-  locationName: string;
-  note: string;
-  points: number;
-  createdAt: any;
-};
-
 export default function RoutesScreen() {
-  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+  const { user } = useAuth();
+  const [checkIns, setCheckIns] = useState<WithId<CheckIn>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setCheckIns([]);
+    if (!user) return;
+
+    const q = query(
+      collection(db, COLLECTIONS.checkIns),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        })) as WithId<CheckIn>[];
+        setCheckIns(items);
         setLoading(false);
-        return;
+      },
+      (error) => {
+        console.log('Firestore dinleme hatasi:', error.message);
+        setLoading(false);
       }
+    );
+  }, [user]);
 
-      const q = query(
-        collection(db, 'check_ins'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-      );
+  const totalPoints = checkIns.reduce((sum, item) => sum + (item.points ?? 0), 0);
 
-      const unsubscribeSnapshot = onSnapshot(
-        q,
-        (snapshot) => {
-          const items = snapshot.docs.map((docItem) => ({
-            id: docItem.id,
-            ...docItem.data(),
-          })) as CheckIn[];
-          setCheckIns(items);
-          setLoading(false);
-        },
-        (error) => {
-          console.log('Firestore dinleme hatasi:', error.message);
-          setLoading(false);
-        }
-      );
-
-      return unsubscribeSnapshot;
-    });
-
-    return () => unsubscribeAuth();
-  }, []);
-
-  const totalPoints = checkIns.reduce((sum, item) => sum + (item.points || 0), 0);
-
-  function formatDate(timestamp: any) {
+  function formatDate(timestamp: CheckIn['createdAt']) {
     if (!timestamp?.toDate) return '...';
     return timestamp.toDate().toLocaleDateString('tr-TR');
   }
@@ -128,13 +112,15 @@ export default function RoutesScreen() {
                 {item.note ? (
                   <ThemedText style={styles.cardNote}>{item.note}</ThemedText>
                 ) : null}
-                <View style={styles.cardStatsRow}>
-                  <View style={styles.cardTag}>
-                    <ThemedText style={styles.cardTagText}>
-                      +{item.points} puan
-                    </ThemedText>
+                {item.points ? (
+                  <View style={styles.cardStatsRow}>
+                    <View style={styles.cardTag}>
+                      <ThemedText style={styles.cardTagText}>
+                        +{item.points} puan
+                      </ThemedText>
+                    </View>
                   </View>
-                </View>
+                ) : null}
               </View>
             </View>
           )}
@@ -142,7 +128,7 @@ export default function RoutesScreen() {
             <ThemedText style={styles.emptyText}>
               {loading
                 ? 'Yukleniyor...'
-                : "Henuz bir check-in yapmadin. Ekle sekmesinden ilk check-in'ini yap!"}
+                : "Henüz bir check-in yapmadın. Keşfet sekmesinden bir mekan seçip ilk check-in'ini yap!"}
             </ThemedText>
           }
         />

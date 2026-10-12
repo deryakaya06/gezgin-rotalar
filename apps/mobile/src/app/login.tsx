@@ -5,20 +5,22 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
+import type { AccountType } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing, MaxContentWidth } from '@/constants/theme';
-import { auth, db } from '@/firebase';
+import { auth } from '@/firebase';
+import { createUserProfile } from '@/services/users';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [mode, setMode] = useState('register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [accountType, setAccountType] = useState('couple');
+  const [displayName, setDisplayName] = useState('');
+  const [accountType, setAccountType] = useState<AccountType>('couple');
   const [message, setMessage] = useState('');
 
   function handleSubmit() {
@@ -28,29 +30,27 @@ export default function LoginScreen() {
     }
 
     if (mode === 'register') {
+      const name = displayName.trim();
+      if (name.length < 2) {
+        setMessage('Görünen ad en az 2 karakter olmalı.');
+        return;
+      }
+
       createUserWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          const uid = userCredential.user.uid;
-          return setDoc(doc(db, 'users', uid), {
-            email,
-            accountType,
-            points: 0,
-            createdAt: new Date().toISOString(),
-          }).then(() => {
-            router.replace('/welcome');
-          });
+        .then((userCredential) =>
+          createUserProfile(userCredential.user.uid, { displayName: name, accountType })
+        )
+        .then(() => {
+          router.replace('/welcome');
         })
         .catch((error) => {
           setMessage('Hata: ' + error.message);
         });
     } else {
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          router.replace('/(tabs)');
-        })
-        .catch((error) => {
-          setMessage('Hata: ' + error.message);
-        });
+      // Yönlendirmeyi _layout'taki Stack.Protected yapar.
+      signInWithEmailAndPassword(auth, email, password).catch((error) => {
+        setMessage('Hata: ' + error.message);
+      });
     }
   }
 
@@ -65,6 +65,16 @@ export default function LoginScreen() {
         <ThemedText type="title" style={styles.title}>
           {mode === 'register' ? 'Gezgin Rotalar\'a Kayıt Ol' : 'Giriş Yap'}
         </ThemedText>
+
+        {mode === 'register' && (
+          <TextInput
+            style={styles.input}
+            placeholder="Görünen ad (ör. Ayşe & Mehmet)"
+            value={displayName}
+            onChangeText={setDisplayName}
+            maxLength={40}
+          />
+        )}
 
         <TextInput
           style={styles.input}

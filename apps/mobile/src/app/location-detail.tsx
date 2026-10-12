@@ -2,22 +2,15 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  addDoc,
-  collection,
-  doc,
-  increment,
-  serverTimestamp,
-  updateDoc,
-} from 'firebase/firestore';
+import { DUPLICATE_CHECKIN_WINDOW_HOURS, POINTS_PER_CHECKIN } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { auth, db } from '@/firebase';
+import { auth } from '@/firebase';
+import { createCheckIn } from '@/services/checkins';
 
 const COLORS = { primary: '#FF5733', border: '#E2E8F0' };
-const POINTS_PER_CHECKIN = 10;
 
 export default function LocationDetailScreen() {
   const router = useRouter();
@@ -35,28 +28,20 @@ export default function LocationDetailScreen() {
     const user = auth.currentUser;
 
     if (!user) {
-      setMessage('Giris yapilmamis gorunuyor.');
+      setMessage('Giriş yapılmamış görünüyor.');
       return;
     }
 
     setSaving(true);
     setMessage('');
 
-    addDoc(collection(db, 'check_ins'), {
-      userId: user.uid,
-      locationId: params.id,
-      locationName: params.name,
-      note: note.trim(),
-      points: POINTS_PER_CHECKIN,
-      createdAt: serverTimestamp(),
-    })
-      .then(() => {
-        return updateDoc(doc(db, 'users', user.uid), {
-          points: increment(POINTS_PER_CHECKIN),
-        });
-      })
-      .then(() => {
-        setMessage('Check-in basarili! +' + POINTS_PER_CHECKIN + ' puan kazandin.');
+    createCheckIn(user.uid, { id: params.id, name: params.name }, note.trim())
+      .then((points) => {
+        setMessage(
+          points > 0
+            ? `Check-in başarılı! +${points} puan kazandın.`
+            : `Check-in kaydedildi. Bu mekana son ${DUPLICATE_CHECKIN_WINDOW_HOURS} saatte zaten check-in yaptığın için puan verilmedi.`
+        );
         setNote('');
       })
       .catch((error) => {
@@ -94,7 +79,7 @@ export default function LocationDetailScreen() {
           disabled={saving}
         >
           <ThemedText style={styles.buttonText}>
-            {saving ? 'Kaydediliyor...' : 'Check-in Yap (+10 Puan)'}
+            {saving ? 'Kaydediliyor...' : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`}
           </ThemedText>
         </Pressable>
 
