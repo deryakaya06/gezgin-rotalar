@@ -87,7 +87,7 @@ export default function RoutesScreen() {
               </View>
 
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                Geçmiş Check-in'ler
+                {"Geçmiş Check-in'ler"}
               </ThemedText>
             </>
           }

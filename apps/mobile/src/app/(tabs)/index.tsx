@@ -31,6 +31,32 @@ type FeedItem = CheckIn & {
   accountType: UserProfile['accountType'];
 };
 
+/** Son 30 check-in'i ve paylaşanların görünen adlarını getirir. */
+async function fetchFeed(): Promise<FeedItem[]> {
+  const snapshot = await getDocs(
+    query(collection(db, COLLECTIONS.checkIns), orderBy('createdAt', 'desc'), limit(30))
+  );
+  const rawItems = snapshot.docs.map((docItem) => ({
+    id: docItem.id,
+    ...(docItem.data() as CheckIn),
+  }));
+
+  const uniqueUserIds = Array.from(new Set(rawItems.map((item) => item.userId)));
+  const userDocs = await Promise.all(
+    uniqueUserIds.map((uid) => getDoc(doc(db, COLLECTIONS.users, uid)))
+  );
+  const userMap: Record<string, Partial<UserProfile> | undefined> = {};
+  userDocs.forEach((userSnap, index) => {
+    userMap[uniqueUserIds[index]] = userSnap.data() as Partial<UserProfile> | undefined;
+  });
+
+  return rawItems.map((item) => ({
+    ...item,
+    displayName: userMap[item.userId]?.displayName ?? 'Bir Gezgin',
+    accountType: userMap[item.userId]?.accountType ?? 'friends',
+  }));
+}
+
 export default function HomeScreen() {
   const [mode, setMode] = useState<'kesfet' | 'takip'>('kesfet');
   const [followingIds, setFollowingIds] = useState<string[]>([]);
@@ -43,7 +69,20 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!user) return;
-    loadFeed();
+    let cancelled = false;
+    fetchFeed()
+      .then((items) => {
+        if (!cancelled) setAllFeedItems(items);
+      })
+      .catch((error) => {
+        console.log('Akış yüklenemedi:', error.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // Başka ekranda takip edilen/bırakılan kullanıcılar "Takip Edilenler" sekmesine hemen yansısın.
@@ -66,50 +105,6 @@ export default function HomeScreen() {
     } else {
       router.push({ pathname: '/user/[id]', params: { id: userId } });
     }
-  }
-
-  function loadFeed() {
-    const q = query(
-      collection(db, COLLECTIONS.checkIns),
-      orderBy('createdAt', 'desc'),
-      limit(30)
-    );
-
-    getDocs(q)
-      .then(async (snapshot) => {
-        const rawItems = snapshot.docs.map((docItem) => ({
-          id: docItem.id,
-          ...(docItem.data() as CheckIn),
-        }));
-
-        const uniqueUserIds = Array.from(
-          new Set(rawItems.map((item) => item.userId))
-        );
-
-        const userDocs = await Promise.all(
-          uniqueUserIds.map((uid) => getDoc(doc(db, COLLECTIONS.users, uid)))
-        );
-
-        const userMap: Record<string, Partial<UserProfile> | null> = {};
-        userDocs.forEach((userSnap, index) => {
-          userMap[uniqueUserIds[index]] = userSnap.exists()
-            ? (userSnap.data() as Partial<UserProfile>)
-            : null;
-        });
-
-        const combined: FeedItem[] = rawItems.map((item) => ({
-          ...item,
-          displayName: userMap[item.userId]?.displayName ?? 'Bir Gezgin',
-          accountType: userMap[item.userId]?.accountType ?? 'friends',
-        }));
-        setAllFeedItems(combined);
-      })
-      .catch((error) => {
-        console.log('Akış yüklenemedi:', error.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
   }
 
   const displayedItems =

@@ -87,7 +87,7 @@ export default function UserProfileScreen() {
                       <FollowButton userId={id} large />
                     </View>
                   </ProfileSummary>
-                  <ThemedText type="defaultSemiBold">Son Check-in'ler</ThemedText>
+                  <ThemedText type="defaultSemiBold">{"Son Check-in'ler"}</ThemedText>
                 </>
               )}
             </View>
