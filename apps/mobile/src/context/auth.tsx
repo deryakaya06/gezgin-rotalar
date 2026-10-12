@@ -21,7 +21,10 @@ const AuthContext = createContext<AuthState>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  // Profil, ait olduğu kullanıcının uid'siyle birlikte tutulur; çıkış yapıldığında
+  // veya kullanıcı değiştiğinde eski profil effect içinde sıfırlanmadan geçersiz sayılır.
+  const [profileState, setProfileState] = useState<{ uid: string; data: UserProfile | null }>();
+  const profile = user && profileState?.uid === user.uid ? profileState.data : null;
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -32,17 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      return;
-    }
+    if (!user) return;
 
     let migrating = false;
     return onSnapshot(
       doc(db, COLLECTIONS.users, user.uid),
       (snapshot) => {
         if (!snapshot.exists()) {
-          setProfile(null);
+          setProfileState({ uid: user.uid, data: null });
           return;
         }
         const data = snapshot.data();
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return;
         }
-        setProfile(data as UserProfile);
+        setProfileState({ uid: user.uid, data: data as UserProfile });
       },
       (error) => {
         console.log('Profil dinlenemedi:', error.message);

@@ -19,7 +19,7 @@ export default function WelcomeScreen() {
           Hoş geldin{profile ? `, ${profile.displayName}` : ''}! 🎉
         </ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.centered}>
-          Gezgin Rotalar'a başarıyla katıldın. Maceraya hazır mısın?
+          {"Gezgin Rotalar'a başarıyla katıldın. Maceraya hazır mısın?"}
         </ThemedText>
 
         <Button
