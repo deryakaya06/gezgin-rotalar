@@ -1,0 +1,182 @@
+rules_version = '2';
+
+// Proje Spark (ücretsiz) planında, Cloud Functions yok. Puan ve sayaç güncellemelerini
+// istemci tek bir batch içinde yapar; kurallar getAfter/existsAfter ile batch'in
+// tutarlı olduğunu doğrular (ör. puan artışı gerçekten yeni oluşturulan bir check-in'e ait).
+// Takipçi/takip sayıları alan olarak tutulmaz, count() sorgusuyla hesaplanır.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function checkInPath(id) {
+      return /databases/$(database)/documents/check_ins/$(id);
+    }
+
+    function locationPath(id) {
+      return /databases/$(database)/documents/locations/$(id);
+    }
+
+    function followingPath(uid, targetId) {
+      return /databases/$(database)/documents/users/$(uid)/following/$(targetId);
+    }
+
+    function followerPath(uid, followerId) {
+      return /databases/$(database)/documents/users/$(uid)/followers/$(followerId);
+    }
+
+    function visitPath(uid, locationId) {
+      return /databases/$(database)/documents/users/$(uid)/visits/$(locationId);
+    }
+
+    // packages/shared/src/constants.ts ile aynı olmalı.
+    function pointsPerCheckIn() {
+      return 10;
+    }
+
+    function duplicateWindow() {
+      return duration.value(24, 'h');
+    }
+
+    function validProfileFields(data) {
+      return data.displayName is string
+        && data.displayName.size() >= 2
+        && data.displayName.size() <= 40
+        && data.accountType in ['couple', 'friends'];
+    }
+
+    // Bu batch'te oluşturulan check-in'e karşılık gelen puan/ziyaret artışı.
+    function isCheckInCounterUpdate(uid) {
+      let after = request.resource.data;
+      let id = after.lastCheckInId;
+      let checkIn = getAfter(checkInPath(id)).data;
+      return after.diff(resource.data).affectedKeys().hasOnly(['totalPoints', 'visitCount', 'lastCheckInId'])
+        && id is string
+        && !exists(checkInPath(id))
+        && existsAfter(checkInPath(id))
+        && checkIn.userId == uid
+        && after.totalPoints == resource.data.totalPoints + checkIn.points
+        && after.visitCount == resource.data.visitCount + 1;
+    }
+
+    // Eski şemadaki (points, email) profili bir kereye mahsus yeni şemaya taşıma.
+    // Eski sürümde her check-in 10 puan verdiği için ziyaret sayısı puandan çıkarılır.
+    function isLegacyMigration() {
+      let after = request.resource.data;
+      let legacyPoints = resource.data.get('points', 0);
+      return !('totalPoints' in resource.data)
+        && after.keys().hasOnly(['displayName', 'accountType', 'totalPoints', 'visitCount', 'createdAt'])
+        && validProfileFields(after)
+        && after.totalPoints == legacyPoints
+        && after.visitCount == math.floor(legacyPoints / pointsPerCheckIn());
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'accountType', 'totalPoints', 'visitCount', 'createdAt'
+        ])
+        && validProfileFields(request.resource.data)
+        && request.resource.data.totalPoints == 0
+        && request.resource.data.visitCount == 0
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isOwner(uid) && (
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'accountType'])
+          && validProfileFields(request.resource.data)
+        )
+        || isCheckInCounterUpdate(uid)
+        || isLegacyMigration()
+      );
+
+      allow delete: if false;
+
+      // Takip ilişkisi iki tarafta tutulur ve ikisi aynı batch'te yazılır/silinir:
+      //   users/{me}/following/{target}  +  users/{target}/followers/{me}
+      match /following/{targetId} {
+        allow read: if signedIn();
+        allow create: if isOwner(uid)
+          && targetId != uid
+          && exists(userPath(targetId))
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          && existsAfter(followerPath(targetId, uid));
+        allow delete: if isOwner(uid)
+          && !existsAfter(followerPath(targetId, uid));
+      }
+
+      match /followers/{followerId} {
+        allow read: if signedIn();
+        allow create: if isOwner(followerId)
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          && existsAfter(followingPath(followerId, uid));
+        allow delete: if isOwner(followerId)
+          && !existsAfter(followingPath(followerId, uid));
+      }
+
+      // Mekan başına son puan alınan zaman; 24 saat kuralını uygulamak için.
+      match /visits/{locationId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['lastAwardedAt', 'checkInId'])
+          && request.resource.data.lastAwardedAt == request.time
+          && (resource == null || resource.data.lastAwardedAt <= request.time - duplicateWindow())
+          && !exists(checkInPath(request.resource.data.checkInId))
+          && getAfter(checkInPath(request.resource.data.checkInId)).data.userId == uid
+          && getAfter(checkInPath(request.resource.data.checkInId)).data.locationId == locationId
+          && getAfter(checkInPath(request.resource.data.checkInId)).data.points == pointsPerCheckIn();
+        allow delete: if false;
+      }
+    }
+
+    // Mekanlar admin panelinden (Sprint 5) yönetilecek; şimdilik Console'dan.
+    match /locations/{locationId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /check_ins/{checkInId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'userId', 'locationId', 'locationName', 'note', 'points', 'createdAt'
+        ])
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 500
+        && request.resource.data.createdAt == request.time
+        && exists(locationPath(request.resource.data.locationId))
+        && request.resource.data.locationName
+             == get(locationPath(request.resource.data.locationId)).data.name
+        // Puan ya 0'dır ya da bu batch'te mekanın visits kaydı güncellenmiştir
+        // (visits kuralı 24 saat sınırını uygular).
+        && (
+          request.resource.data.points == 0
+          || (
+            request.resource.data.points == pointsPerCheckIn()
+            && getAfter(visitPath(request.auth.uid, request.resource.data.locationId)).data.checkInId == checkInId
+          )
+        )
+        // Kullanıcının puan/ziyaret sayacı aynı batch'te artırılmalıdır.
+        && getAfter(userPath(request.auth.uid)).data.lastCheckInId == checkInId;
+
+      // Silme puanı geri almayı gerektirir; moderasyon admin panelinden yapılacak.
+      allow update, delete: if false;
+    }
+  }
+}

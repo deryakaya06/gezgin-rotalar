@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { onAuthStateChanged } from 'firebase/auth';
 import {
   collection,
   onSnapshot,
@@ -9,72 +8,51 @@ import {
   query,
   where,
 } from 'firebase/firestore';
+import { COLLECTIONS, type CheckIn, type WithId } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { auth, db } from '@/firebase';
-
-const COLORS = {
-  primary: '#FF5733',
-  tertiary: '#0D9488',
-  border: '#E2E8F0',
-};
-
-type CheckIn = {
-  id: string;
-  locationName: string;
-  note: string;
-  points: number;
-  createdAt: any;
-};
+import { Card } from '@/components/ui/card';
+import { Tag } from '@/components/ui/tag';
+import { Radius, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/auth';
+import { db } from '@/firebase';
+import { useTheme } from '@/hooks/use-theme';
+import { formatDate } from '@/utils/format';
 
 export default function RoutesScreen() {
-  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+  const { user } = useAuth();
+  const theme = useTheme();
+  const [checkIns, setCheckIns] = useState<WithId<CheckIn>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setCheckIns([]);
+    if (!user) return;
+
+    const q = query(
+      collection(db, COLLECTIONS.checkIns),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        })) as WithId<CheckIn>[];
+        setCheckIns(items);
         setLoading(false);
-        return;
+      },
+      (error) => {
+        console.log('Check-in\'ler dinlenemedi:', error.message);
+        setLoading(false);
       }
+    );
+  }, [user]);
 
-      const q = query(
-        collection(db, 'check_ins'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-      );
-
-      const unsubscribeSnapshot = onSnapshot(
-        q,
-        (snapshot) => {
-          const items = snapshot.docs.map((docItem) => ({
-            id: docItem.id,
-            ...docItem.data(),
-          })) as CheckIn[];
-          setCheckIns(items);
-          setLoading(false);
-        },
-        (error) => {
-          console.log('Firestore dinleme hatasi:', error.message);
-          setLoading(false);
-        }
-      );
-
-      return unsubscribeSnapshot;
-    });
-
-    return () => unsubscribeAuth();
-  }, []);
-
-  const totalPoints = checkIns.reduce((sum, item) => sum + (item.points || 0), 0);
-
-  function formatDate(timestamp: any) {
-    if (!timestamp?.toDate) return '...';
-    return timestamp.toDate().toLocaleDateString('tr-TR');
-  }
+  const totalPoints = checkIns.reduce((sum, item) => sum + (item.points ?? 0), 0);
 
   return (
     <ThemedView style={styles.container}>
@@ -85,64 +63,54 @@ export default function RoutesScreen() {
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <>
-              <ThemedText type="title" style={styles.title}>
-                Rotalarim
+              <ThemedText type="subtitle" style={styles.title}>
+                Rotalarım
               </ThemedText>
 
               <View style={styles.summaryRow}>
-                <View style={styles.summaryBox}>
-                  <ThemedText type="title" style={styles.summaryNumber}>
+                <Card style={styles.summaryBox}>
+                  <ThemedText type="subtitle" style={{ color: theme.primary }}>
                     {checkIns.length}
                   </ThemedText>
-                  <ThemedText style={styles.summaryLabel}>
+                  <ThemedText type="caption" themeColor="textSecondary">
                     Toplam Check-in
                   </ThemedText>
-                </View>
-                <View style={styles.summaryBox}>
-                  <ThemedText type="title" style={styles.summaryNumber}>
+                </Card>
+                <Card style={styles.summaryBox}>
+                  <ThemedText type="subtitle" style={{ color: theme.primary }}>
                     {totalPoints}
                   </ThemedText>
-                  <ThemedText style={styles.summaryLabel}>
-                    Kazanilan Puan
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    Kazanılan Puan
                   </ThemedText>
-                </View>
+                </Card>
               </View>
 
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                Gecmis Check-in'ler
+                {"Geçmiş Check-in'ler"}
               </ThemedText>
             </>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardIcon}>
-                <ThemedText style={styles.cardEmoji}>#</ThemedText>
+            <Card style={styles.card}>
+              <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
+                <ThemedText style={styles.cardEmoji}>📍</ThemedText>
               </View>
               <View style={styles.cardContent}>
-                <ThemedText type="defaultSemiBold">
-                  {item.locationName}
-                </ThemedText>
-                <ThemedText style={styles.cardDate}>
+                <ThemedText type="defaultSemiBold">{item.locationName}</ThemedText>
+                <ThemedText type="caption" themeColor="textSecondary">
                   {formatDate(item.createdAt)}
                 </ThemedText>
-                {item.note ? (
-                  <ThemedText style={styles.cardNote}>{item.note}</ThemedText>
-                ) : null}
-                <View style={styles.cardStatsRow}>
-                  <View style={styles.cardTag}>
-                    <ThemedText style={styles.cardTagText}>
-                      +{item.points} puan
-                    </ThemedText>
-                  </View>
-                </View>
+                {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
+                {item.points ? <Tag label={`+${item.points} puan`} /> : null}
               </View>
-            </View>
+            </Card>
           )}
           ListEmptyComponent={
-            <ThemedText style={styles.emptyText}>
+            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
               {loading
-                ? 'Yukleniyor...'
-                : "Henuz bir check-in yapmadin. Ekle sekmesinden ilk check-in'ini yap!"}
+                ? 'Yükleniyor...'
+                : "Henüz bir check-in yapmadın. Keşfet sekmesinden bir mekan seçip ilk check-in'ini yap!"}
             </ThemedText>
           }
         />
@@ -164,42 +132,12 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     marginBottom: Spacing.four,
   },
-  summaryBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  summaryNumber: { fontSize: 22, color: COLORS.primary },
-  summaryLabel: { fontSize: 11, color: '#94A3B8' },
+  summaryBox: { flex: 1, alignItems: 'center', borderRadius: Radius.medium },
   sectionTitle: { marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
-  card: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  cardIcon: {
-    width: 72,
-    backgroundColor: '#CCFBF1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardEmoji: { fontSize: 28 },
-  cardContent: { flex: 1, padding: Spacing.three, gap: 4 },
-  cardDate: { fontSize: 12, color: '#94A3B8' },
-  cardNote: { fontSize: 13 },
-  cardStatsRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  cardTag: {
-    backgroundColor: '#FFF1EC',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  cardTagText: { fontSize: 11, color: COLORS.primary, fontWeight: '600' },
-  emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: Spacing.four },
+  card: { flexDirection: 'row', padding: 0, overflow: 'hidden' },
+  cardIcon: { width: 72, alignItems: 'center', justifyContent: 'center' },
+  cardEmoji: { fontSize: 28, lineHeight: 34 },
+  cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
+  emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

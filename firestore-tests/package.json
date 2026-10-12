@@ -1,0 +1,11 @@
+{
+  "name": "firestore-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npx -y firebase-tools@15.33.0 emulators:exec --project demo-gezgin --only auth,firestore \"node --test rules.test.mjs\""
+  },
+  "devDependencies": {
+    "firebase": "^12.19.0"
+  }
+}
