@@ -340,6 +340,24 @@ describe('locations (admin)', () => {
     });
   });
 
+  test('admin kapak fotoğrafı ekleyebilir, başka siteden adres reddedilir', async () => {
+    const admin = await adminUser();
+    const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+    const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+    await setDoc(doc(admin.db, 'locations', 'kapakli'), {
+      ...validLocation(),
+      coverPhotoUrl: `https://res.cloudinary.com/${cloudName}/image/upload/v1/kapak.jpg`,
+      coverPhotoCredit: 'A.Savin · FAL',
+      coverPhotoSource: 'https://commons.wikimedia.org/wiki/File:Ornek.jpg',
+    });
+    await assert.rejects(
+      setDoc(doc(admin.db, 'locations', 'kapaksiz'), {
+        ...validLocation(),
+        coverPhotoUrl: 'https://kotu-site.com/kapak.jpg',
+      })
+    );
+  });
+
   test('normal kullanıcı mekan ekleyemez', async () => {
     const bob = await newUser('bob');
     await assert.rejects(setDoc(doc(bob.db, 'locations', 'sahte'), validLocation()));

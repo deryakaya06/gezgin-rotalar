@@ -43,6 +43,13 @@ npx firebase-tools deploy --only firestore
 ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run seed:locations
 ```
 
+Kapak fotoğrafları Wikipedia/Wikimedia Commons'taki serbest lisanslı görsellerden alınır ve Cloudinary'ye yüklenir. Lisanslar fotoğrafçının adını istediği için künye (`coverPhotoCredit`) mekan detayında gösterilir.
+
+```sh
+npm run covers:fetch -- --dry-run   # ne bulunacağını gösterir
+npm run covers:fetch                # fotoğrafı olmayanları çeker, locations.json'a yazar
+```
+
 ## Tema
 
 Renkler yalnızca `apps/mobile/src/constants/theme.ts` içinde tanımlanır (açık/koyu). Bileşenler renkleri `useTheme()` ile okur; ortak arayüz parçaları `apps/mobile/src/components/ui/` altındadır.

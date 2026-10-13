@@ -68,8 +68,12 @@ service cloud.firestore {
     function validLocation(data) {
       return data.keys().hasOnly([
           'name', 'description', 'district', 'category', 'coordinates', 'rating',
-          'isFree', 'isSponsored', 'sponsorInfo', 'createdAt', 'updatedAt'
+          'isFree', 'isSponsored', 'sponsorInfo', 'createdAt', 'updatedAt',
+          'coverPhotoUrl', 'coverPhotoCredit', 'coverPhotoSource'
         ])
+        && (!('coverPhotoUrl' in data) || validPhotoUrl(data.coverPhotoUrl))
+        && data.get('coverPhotoCredit', '') is string && data.get('coverPhotoCredit', '').size() <= 200
+        && data.get('coverPhotoSource', '') is string && data.get('coverPhotoSource', '').size() <= 500
         && data.name is string && data.name.size() > 0 && data.name.size() <= 120
         && data.description is string && data.description.size() <= 1000
         && data.get('district', '') is string
