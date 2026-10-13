@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import {
@@ -10,6 +11,7 @@ import {
 } from '@repo/shared';
 
 import { LocationMap } from '@/components/location-map';
+import { PhotoPicker } from '@/components/photo-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
@@ -17,11 +19,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
+import {
+  isPhotoUploadConfigured,
+  photoThumbnail,
+  uploadPhoto,
+  type PickedPhoto,
+} from '@/services/photos';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,7 +40,8 @@ export default function LocationDetailScreen() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'notFound'>('loading');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [saving, setSaving] = useState<false | 'uploading' | 'saving'>(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,13 +60,24 @@ export default function LocationDetailScreen() {
     };
   }, [id]);
 
-  function handleCheckIn() {
+  async function handleCheckIn() {
     if (!user || !location) return;
 
-    setSaving(true);
     setMessage('');
+    let photoUrl: string | undefined;
+    if (photo) {
+      setSaving('uploading');
+      try {
+        photoUrl = await uploadPhoto(photo);
+      } catch (error: any) {
+        setMessage('Fotoğraf yüklenemedi: ' + error.message);
+        setSaving(false);
+        return;
+      }
+    }
 
-    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim())
+    setSaving('saving');
+    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim(), photoUrl)
       .then((points) => {
         setMessage(
           points > 0
@@ -65,6 +85,7 @@ export default function LocationDetailScreen() {
             : `Check-in kaydedildi. Bu mekana son ${DUPLICATE_CHECKIN_WINDOW_HOURS} saatte zaten check-in yaptığın için puan verilmedi.`
         );
         setNote('');
+        setPhoto(null);
       })
       .catch((error) => {
         setMessage('Hata: ' + error.message);
@@ -94,6 +115,30 @@ export default function LocationDetailScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <BackButton />
+
+          {location.coverPhotoUrl ? (
+            <View style={styles.coverBlock}>
+              <Image
+                source={{ uri: photoThumbnail(location.coverPhotoUrl, 1200, 750) }}
+                style={[styles.cover, { backgroundColor: theme.backgroundElement }]}
+                contentFit="cover"
+                transition={200}
+                accessibilityLabel={`${location.name} fotoğrafı`}
+              />
+              {location.coverPhotoCredit ? (
+                <Pressable
+                  disabled={!location.coverPhotoSource}
+                  onPress={() => location.coverPhotoSource && Linking.openURL(location.coverPhotoSource)}
+                  hitSlop={6}
+                >
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    Fotoğraf: {location.coverPhotoCredit}
+                    {location.coverPhotoSource ? ' · Wikimedia Commons' : ''}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.titleBlock}>
             <ThemedText type="subtitle">{location.name}</ThemedText>
@@ -139,6 +184,13 @@ export default function LocationDetailScreen() {
           ) : null}
 
           <View style={styles.checkIn}>
+            {isPhotoUploadConfigured ? (
+              <>
+                <ThemedText type="smallBold">Fotoğraf (isteğe bağlı)</ThemedText>
+                <PhotoPicker photo={photo} onChange={setPhoto} disabled={!!saving} />
+              </>
+            ) : null}
+
             <ThemedText type="smallBold">Not (isteğe bağlı)</ThemedText>
             <TextField
               style={styles.noteInput}
@@ -149,9 +201,15 @@ export default function LocationDetailScreen() {
               multiline
             />
             <Button
-              title={saving ? 'Kaydediliyor...' : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`}
+              title={
+                saving === 'uploading'
+                  ? 'Fotoğraf yükleniyor...'
+                  : saving === 'saving'
+                    ? 'Kaydediliyor...'
+                    : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`
+              }
               onPress={handleCheckIn}
-              disabled={saving}
+              disabled={!!saving}
             />
             {message ? (
               <ThemedText type="small" style={styles.centered}>
@@ -174,6 +232,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
     gap: Spacing.three,
   },
+  coverBlock: { gap: Spacing.one },
+  cover: { width: '100%', aspectRatio: 16 / 10, borderRadius: Radius.large },
   titleBlock: { gap: Spacing.one },
   tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   sponsorCard: { gap: Spacing.one },

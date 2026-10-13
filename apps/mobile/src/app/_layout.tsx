@@ -1,4 +1,10 @@
 import { useEffect } from 'react';
+// Ağırlıklar tek tek içe aktarılır; paketin kökü 7 ağırlığın hepsini uygulamaya katar.
+import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
+import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
+import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
+import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
@@ -47,13 +53,21 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { user, initializing } = useAuth();
+  const [fontsLoaded, fontError] = useFonts({
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+  // Yazı tipi yüklenemezse sistem yazısıyla devam edilir.
+  const ready = !initializing && (fontsLoaded || !!fontError);
 
-  // Oturum durumu belli olana kadar splash ekranı açık kalır.
+  // Oturum durumu ve yazı tipleri hazır olana kadar splash ekranı açık kalır.
   useEffect(() => {
-    if (!initializing) SplashScreen.hideAsync();
-  }, [initializing]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  if (initializing) return null;
+  if (!ready) return null;
 
   return (
     <>

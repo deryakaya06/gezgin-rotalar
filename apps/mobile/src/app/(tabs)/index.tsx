@@ -14,8 +14,10 @@ import {
 } from 'firebase/firestore';
 import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
+import { CheckInPhoto } from '@/components/check-in-photo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TileStripe } from '@/components/tile-stripe';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
 import { Tag } from '@/components/ui/tag';
@@ -115,6 +117,7 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <TileStripe inset={Spacing.four} />
         <FlatList
           data={displayedItems}
           keyExtractor={(item) => item.id}
@@ -152,6 +155,8 @@ export default function HomeScreen() {
               </Pressable>
 
               <Tag label={item.locationName} tone="accent" />
+
+              {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
 
               {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
 

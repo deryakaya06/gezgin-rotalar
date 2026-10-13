@@ -55,6 +55,12 @@ export type Location = {
   isFree?: boolean;
   isSponsored?: boolean;
   sponsorInfo?: SponsorInfo | null;
+  /** Cloudinary'deki kapak fotoğrafı. */
+  coverPhotoUrl?: string;
+  /** Fotoğrafçı ve lisans, ör. "A.Savin · FAL" (lisans gereği gösterilir). */
+  coverPhotoCredit?: string;
+  /** Fotoğrafın kaynağı (Wikimedia Commons sayfası). */
+  coverPhotoSource?: string;
 };
 
 /** check_ins/{id} */
@@ -65,6 +71,8 @@ export type CheckIn = {
   note: string;
   /** POINTS_PER_CHECKIN ya da (24 saat içinde tekrar ise) 0. */
   points: number;
+  /** Cloudinary'deki fotoğrafın adresi (https://res.cloudinary.com/...). */
+  photoUrl?: string;
   createdAt: FirestoreTimestamp | null;
 };
 

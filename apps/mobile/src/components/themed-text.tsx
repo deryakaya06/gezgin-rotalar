@@ -1,6 +1,6 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { Fonts, ThemeColor } from '@/constants/theme';
+import { Fonts, ManropeFamily, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -18,8 +18,23 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
+/**
+ * Özel yazı tiplerinde fontWeight aileyi değiştirmez (Android'de yok sayar, iOS'ta
+ * sahte kalınlık üretir). Bu yüzden istenen kalınlık Manrope'un ilgili ailesine çevrilir.
+ */
+function manropeFor(weight: unknown) {
+  const w = Number(weight ?? 500);
+  if (w >= 800) return ManropeFamily[800];
+  if (w >= 700) return ManropeFamily[700];
+  if (w >= 600) return ManropeFamily[600];
+  return ManropeFamily[500];
+}
+
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const flat: TextStyle | undefined = StyleSheet.flatten([typeStyles(type), style]);
+  const font =
+    type === 'code' ? null : { fontFamily: manropeFor(flat?.fontWeight), fontWeight: 'normal' as const };
 
   return (
     <Text
@@ -36,10 +51,15 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'linkPrimary' && [styles.linkPrimary, { color: theme.primary }],
         type === 'code' && styles.code,
         style,
+        font,
       ]}
       {...rest}
     />
   );
+}
+
+function typeStyles(type: NonNullable<ThemedTextProps['type']>) {
+  return styles[type];
 }
 
 const styles = StyleSheet.create({
@@ -70,13 +90,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 48,
-    fontWeight: 600,
+    fontWeight: 800,
+    letterSpacing: -0.5,
     lineHeight: 52,
   },
   subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    fontSize: 30,
+    lineHeight: 38,
+    fontWeight: 800,
+    letterSpacing: -0.3,
   },
   link: {
     lineHeight: 30,

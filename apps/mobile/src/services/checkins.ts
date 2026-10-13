@@ -16,7 +16,8 @@ import { db } from '@/firebase';
 export async function createCheckIn(
   uid: string,
   location: { id: string; name: string },
-  note: string
+  note: string,
+  photoUrl?: string
 ) {
   const visitRef = doc(db, COLLECTIONS.users, uid, 'visits', location.id);
   const visit = await getDoc(visitRef);
@@ -35,6 +36,7 @@ export async function createCheckIn(
     note,
     points,
     createdAt: serverTimestamp(),
+    ...(photoUrl ? { photoUrl } : {}),
   });
   batch.update(doc(db, COLLECTIONS.users, uid), {
     totalPoints: increment(points),

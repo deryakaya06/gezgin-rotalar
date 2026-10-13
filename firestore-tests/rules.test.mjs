@@ -1,6 +1,7 @@
 // firestore.rules için emülator testleri. Çalıştırma: npm test
 // İstemci yazımları apps/mobile/src/services/* içindeki batch'lerle aynı şekilde yapılır.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, before, describe, test } from 'node:test';
 
 import { deleteApp, initializeApp } from 'firebase/app';
@@ -339,6 +340,24 @@ describe('locations (admin)', () => {
     });
   });
 
+  test('admin kapak fotoğrafı ekleyebilir, başka siteden adres reddedilir', async () => {
+    const admin = await adminUser();
+    const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+    const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+    await setDoc(doc(admin.db, 'locations', 'kapakli'), {
+      ...validLocation(),
+      coverPhotoUrl: `https://res.cloudinary.com/${cloudName}/image/upload/v1/kapak.jpg`,
+      coverPhotoCredit: 'A.Savin · FAL',
+      coverPhotoSource: 'https://commons.wikimedia.org/wiki/File:Ornek.jpg',
+    });
+    await assert.rejects(
+      setDoc(doc(admin.db, 'locations', 'kapaksiz'), {
+        ...validLocation(),
+        coverPhotoUrl: 'https://kotu-site.com/kapak.jpg',
+      })
+    );
+  });
+
   test('normal kullanıcı mekan ekleyemez', async () => {
     const bob = await newUser('bob');
     await assert.rejects(setDoc(doc(bob.db, 'locations', 'sahte'), validLocation()));
@@ -361,5 +380,29 @@ describe('locations (admin)', () => {
     await assert.rejects(setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Eve'), role: 'admin' }));
     const bob = await newUser('bob');
     await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { role: 'admin' }));
+  });
+});
+
+describe('check-in fotoğrafı', () => {
+  // Kurallardaki cloudinaryCloudName() değerini okur; adı değişince test de uyum sağlar.
+  const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+  const valid = `https://res.cloudinary.com/${cloudName}/image/upload/v1/check-ins/abc.jpg`;
+
+  test('kendi Cloudinary hesabımızdaki fotoğraf kabul edilir', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob, { photoUrl: valid });
+  });
+
+  test('başka site veya başka Cloudinary hesabı reddedilir', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(checkInBatch(bob, { photoUrl: 'https://kotu-site.com/foto.jpg', points: 0, writeVisit: false }));
+    await assert.rejects(
+      checkInBatch(bob, {
+        photoUrl: 'https://res.cloudinary.com/baska-hesap/image/upload/x.jpg',
+        points: 0,
+        writeVisit: false,
+      })
+    );
   });
 });

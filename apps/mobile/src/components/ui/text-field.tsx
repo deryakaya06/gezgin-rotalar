@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
-import { Radius } from '@/constants/theme';
+import { ManropeFamily, Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Temaya uyan metin kutusu; karanlık modda da okunur. */
@@ -27,5 +27,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: ManropeFamily[500],
   },
 });
