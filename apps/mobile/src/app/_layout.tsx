@@ -1,4 +1,11 @@
 import { useEffect } from 'react';
+import {
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/manrope';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
@@ -47,13 +54,21 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { user, initializing } = useAuth();
+  const [fontsLoaded, fontError] = useFonts({
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+  // Yazı tipi yüklenemezse sistem yazısıyla devam edilir.
+  const ready = !initializing && (fontsLoaded || !!fontError);
 
-  // Oturum durumu belli olana kadar splash ekranı açık kalır.
+  // Oturum durumu ve yazı tipleri hazır olana kadar splash ekranı açık kalır.
   useEffect(() => {
-    if (!initializing) SplashScreen.hideAsync();
-  }, [initializing]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  if (initializing) return null;
+  if (!ready) return null;
 
   return (
     <>

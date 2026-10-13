@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
+import { ManropeFamily } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
@@ -10,7 +11,10 @@ export default function AppTabs() {
       backgroundColor={theme.background}
       indicatorColor={theme.primarySoft}
       tintColor={theme.primary}
-      labelStyle={{ selected: { color: theme.primary } }}>
+      labelStyle={{
+        default: { fontFamily: ManropeFamily[600] },
+        selected: { color: theme.primary, fontFamily: ManropeFamily[700] },
+      }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Akış</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
