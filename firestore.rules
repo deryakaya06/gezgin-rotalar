@@ -48,6 +48,32 @@ service cloud.firestore {
       return duration.value(24, 'h');
     }
 
+    // role alanını yalnızca Firebase Console'dan (kuralları atlayarak) eklemek mümkündür;
+    // kullanıcı kendi profiline role yazamaz (create/update kuralları buna izin vermez).
+    function isAdmin() {
+      return signedIn() && get(userPath(request.auth.uid)).data.get('role', '') == 'admin';
+    }
+
+    function validLocation(data) {
+      return data.keys().hasOnly([
+          'name', 'description', 'district', 'category', 'coordinates', 'rating',
+          'isFree', 'isSponsored', 'sponsorInfo', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.description is string && data.description.size() <= 1000
+        && data.get('district', '') is string
+        && data.get('category', '') is string
+        && (!('coordinates' in data) || (
+          data.coordinates.keys().hasOnly(['latitude', 'longitude'])
+          && data.coordinates.latitude is number && data.coordinates.latitude >= -90 && data.coordinates.latitude <= 90
+          && data.coordinates.longitude is number && data.coordinates.longitude >= -180 && data.coordinates.longitude <= 180
+        ))
+        && (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5))
+        && data.get('isFree', false) is bool
+        && data.get('isSponsored', false) is bool
+        && (data.get('sponsorInfo', null) == null || data.sponsorInfo.name is string);
+    }
+
     function validProfileFields(data) {
       return data.displayName is string
         && data.displayName.size() >= 2
@@ -143,10 +169,11 @@ service cloud.firestore {
       }
     }
 
-    // Mekanlar admin panelinden (Sprint 5) yönetilecek; şimdilik Console'dan.
+    // Mekanları yalnızca admin yazar (şimdilik scripts/seed-locations.mjs, Sprint 5'te admin paneli).
     match /locations/{locationId} {
       allow read: if signedIn();
-      allow write: if false;
+      allow create, update: if isAdmin() && validLocation(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /check_ins/{checkInId} {

@@ -304,3 +304,62 @@ describe('eski profil taşıma', () => {
     await assert.rejects(migrate(user, { visitCount: 50 }));
   });
 });
+
+describe('locations (admin)', () => {
+  const validLocation = () => ({
+    name: 'Moda Sahili',
+    description: 'Gün batımı için.',
+    district: 'Kadıköy',
+    category: 'Park',
+    coordinates: { latitude: 40.981, longitude: 29.026 },
+    rating: 4.7,
+    isFree: true,
+    isSponsored: false,
+    sponsorInfo: null,
+  });
+
+  async function adminUser() {
+    const admin = await newUser('admin');
+    await adminSet(`users/${admin.uid}`, {
+      displayName: 'admin',
+      accountType: 'friends',
+      totalPoints: 0,
+      visitCount: 0,
+      role: 'admin',
+    });
+    return admin;
+  }
+
+  test('admin mekan ekleyebilir ve güncelleyebilir', async () => {
+    const admin = await adminUser();
+    await setDoc(doc(admin.db, 'locations', 'moda'), validLocation());
+    await updateDoc(doc(admin.db, 'locations', 'moda'), {
+      isSponsored: true,
+      sponsorInfo: { name: 'Moda Kahvecisi', offer: 'Check-in yapana %10 indirim' },
+    });
+  });
+
+  test('normal kullanıcı mekan ekleyemez', async () => {
+    const bob = await newUser('bob');
+    await assert.rejects(setDoc(doc(bob.db, 'locations', 'sahte'), validLocation()));
+  });
+
+  test('geçersiz mekan verisi reddedilir', async () => {
+    const admin = await adminUser();
+    await assert.rejects(setDoc(doc(admin.db, 'locations', 'x1'), { ...validLocation(), rating: 9 }));
+    await assert.rejects(
+      setDoc(doc(admin.db, 'locations', 'x2'), {
+        ...validLocation(),
+        coordinates: { latitude: 200, longitude: 29 },
+      })
+    );
+    await assert.rejects(setDoc(doc(admin.db, 'locations', 'x3'), { ...validLocation(), hack: true }));
+  });
+
+  test('kullanıcı kendine admin rolü veremez', async () => {
+    const eve = await signUp('eve');
+    await assert.rejects(setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Eve'), role: 'admin' }));
+    const bob = await newUser('bob');
+    await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { role: 'admin' }));
+  });
+});
