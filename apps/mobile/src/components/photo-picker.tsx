@@ -5,16 +5,16 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { pickPhoto } from '@/services/photos';
+import { pickPhoto, type PickedPhoto } from '@/services/photos';
 
 /** Check-in için tek fotoğraf seçimi: kamera/galeri düğmeleri ya da seçilen fotoğrafın önizlemesi. */
 export function PhotoPicker({
-  uri,
+  photo,
   onChange,
   disabled,
 }: {
-  uri: string | null;
-  onChange: (uri: string | null) => void;
+  photo: PickedPhoto | null;
+  onChange: (photo: PickedPhoto | null) => void;
   disabled?: boolean;
 }) {
   const theme = useTheme();
@@ -37,10 +37,10 @@ export function PhotoPicker({
     if (result) onChange(result);
   }
 
-  if (uri) {
+  if (photo) {
     return (
       <View style={styles.previewWrap}>
-        <Image source={{ uri }} style={styles.preview} contentFit="cover" />
+        <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Fotoğrafı kaldır"

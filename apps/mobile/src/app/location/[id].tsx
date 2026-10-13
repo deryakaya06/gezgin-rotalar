@@ -23,7 +23,7 @@ import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
-import { isPhotoUploadConfigured, uploadPhoto } from '@/services/photos';
+import { isPhotoUploadConfigured, uploadPhoto, type PickedPhoto } from '@/services/photos';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,7 +34,7 @@ export default function LocationDetailScreen() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'notFound'>('loading');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [saving, setSaving] = useState<false | 'uploading' | 'saving'>(false);
 
   useEffect(() => {
@@ -59,10 +59,10 @@ export default function LocationDetailScreen() {
 
     setMessage('');
     let photoUrl: string | undefined;
-    if (photoUri) {
+    if (photo) {
       setSaving('uploading');
       try {
-        photoUrl = await uploadPhoto(photoUri);
+        photoUrl = await uploadPhoto(photo);
       } catch (error: any) {
         setMessage('Fotoğraf yüklenemedi: ' + error.message);
         setSaving(false);
@@ -79,7 +79,7 @@ export default function LocationDetailScreen() {
             : `Check-in kaydedildi. Bu mekana son ${DUPLICATE_CHECKIN_WINDOW_HOURS} saatte zaten check-in yaptığın için puan verilmedi.`
         );
         setNote('');
-        setPhotoUri(null);
+        setPhoto(null);
       })
       .catch((error) => {
         setMessage('Hata: ' + error.message);
@@ -157,7 +157,7 @@ export default function LocationDetailScreen() {
             {isPhotoUploadConfigured ? (
               <>
                 <ThemedText type="smallBold">Fotoğraf (isteğe bağlı)</ThemedText>
-                <PhotoPicker uri={photoUri} onChange={setPhotoUri} disabled={!!saving} />
+                <PhotoPicker photo={photo} onChange={setPhoto} disabled={!!saving} />
               </>
             ) : null}
 
