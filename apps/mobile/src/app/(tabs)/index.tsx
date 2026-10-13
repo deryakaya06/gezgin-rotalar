@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
+import { CheckInPhoto } from '@/components/check-in-photo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
@@ -152,6 +153,8 @@ export default function HomeScreen() {
               </Pressable>
 
               <Tag label={item.locationName} tone="accent" />
+
+              {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
 
               {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
 

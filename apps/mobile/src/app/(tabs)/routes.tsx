@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { COLLECTIONS, type CheckIn, type WithId } from '@repo/shared';
 
+import { CheckInPhoto } from '@/components/check-in-photo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
@@ -93,9 +94,13 @@ export default function RoutesScreen() {
           }
           renderItem={({ item }) => (
             <Card style={styles.card}>
-              <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
-                <ThemedText style={styles.cardEmoji}>📍</ThemedText>
-              </View>
+              {item.photoUrl ? (
+                <CheckInPhoto url={item.photoUrl} size={240} style={styles.cardPhoto} />
+              ) : (
+                <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
+                  <ThemedText style={styles.cardEmoji}>📍</ThemedText>
+                </View>
+              )}
               <View style={styles.cardContent}>
                 <ThemedText type="defaultSemiBold">{item.locationName}</ThemedText>
                 <ThemedText type="caption" themeColor="textSecondary">
@@ -138,6 +143,7 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', padding: 0, overflow: 'hidden' },
   cardIcon: { width: 72, alignItems: 'center', justifyContent: 'center' },
   cardEmoji: { fontSize: 28, lineHeight: 34 },
+  cardPhoto: { width: 96, aspectRatio: undefined, height: '100%', minHeight: 96, borderRadius: 0 },
   cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

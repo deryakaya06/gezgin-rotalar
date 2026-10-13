@@ -44,6 +44,17 @@ service cloud.firestore {
       return 10;
     }
 
+    // packages/shared/src/constants.ts içindeki CLOUDINARY.cloudName ile aynı olmalı.
+    function cloudinaryCloudName() {
+      return 'CLOUD_NAME';
+    }
+
+    function validPhotoUrl(url) {
+      return url is string
+        && url.size() <= 300
+        && url.matches('https://res[.]cloudinary[.]com/' + cloudinaryCloudName() + '/image/upload/.+');
+    }
+
     function duplicateWindow() {
       return duration.value(24, 'h');
     }
@@ -182,8 +193,9 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.keys().hasOnly([
-          'userId', 'locationId', 'locationName', 'note', 'points', 'createdAt'
+          'userId', 'locationId', 'locationName', 'note', 'points', 'createdAt', 'photoUrl'
         ])
+        && (!('photoUrl' in request.resource.data) || validPhotoUrl(request.resource.data.photoUrl))
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 500
         && request.resource.data.createdAt == request.time
