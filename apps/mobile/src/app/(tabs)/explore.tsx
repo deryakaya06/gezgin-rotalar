@@ -2,44 +2,37 @@ import { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { collection, getDocs } from 'firebase/firestore';
-import { COLLECTIONS, type Location, type WithId } from '@repo/shared';
+import type { Location, WithId } from '@repo/shared';
 
+import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui/chip';
+import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
 import { Radius, Spacing } from '@/constants/theme';
-import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
-
-const FILTERS = ['Tümü', 'Yüksek Puanlı (4.5+)', 'Ücretsiz Giriş'];
-
-const QUICK_CATEGORIES = [
-  { id: 'q0', label: 'Senin İçin' },
-  { id: 'q1', label: 'Galata' },
-  { id: 'q2', label: 'Boğaz Keyfi' },
-  { id: 'q3', label: 'Kadıköy' },
-  { id: 'q4', label: 'Adalar' },
-];
+import {
+  LOCATION_FILTERS,
+  districtsOf,
+  fetchLocations,
+  filterLocations,
+  type LocationFilter,
+} from '@/services/locations';
 
 export default function ExploreScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const [activeFilter, setActiveFilter] = useState(FILTERS[0]);
+  const [view, setView] = useState<'list' | 'map'>('list');
+  const [filter, setFilter] = useState<LocationFilter>('Tümü');
+  const [district, setDistrict] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [locations, setLocations] = useState<WithId<Location>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDocs(collection(db, COLLECTIONS.locations))
-      .then((snapshot) => {
-        const items = snapshot.docs.map((docItem) => ({
-          id: docItem.id,
-          ...docItem.data(),
-        })) as WithId<Location>[];
-        setLocations(items);
-      })
+    fetchLocations()
+      .then(setLocations)
       .catch((error) => {
         console.log('Mekanlar yüklenemedi:', error.message);
       })
@@ -48,130 +41,152 @@ export default function ExploreScreen() {
       });
   }, []);
 
-  const filteredLocations = locations.filter((item) =>
-    item.name.toLocaleLowerCase('tr').includes(search.trim().toLocaleLowerCase('tr'))
+  const visible = filterLocations(locations, { search, filter, district });
+  const districts = districtsOf(locations);
+
+  function openLocation(location: WithId<Location>) {
+    router.push({ pathname: '/location/[id]', params: { id: location.id } });
+  }
+
+  const header = (
+    <View style={styles.header}>
+      <View style={styles.titleRow}>
+        <ThemedText type="subtitle">Şehri Keşfet</ThemedText>
+        <View style={styles.viewToggle}>
+          <Chip label="Liste" selected={view === 'list'} onPress={() => setView('list')} />
+          <Chip label="Harita" selected={view === 'map'} onPress={() => setView('map')} />
+        </View>
+      </View>
+
+      <TextField
+        placeholder="Mekan, ilçe veya kategori ara..."
+        value={search}
+        onChangeText={setSearch}
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+      />
+
+      <View style={styles.chipRow}>
+        {LOCATION_FILTERS.map((f) => (
+          <Chip key={f} label={f} selected={f === filter} onPress={() => setFilter(f)} />
+        ))}
+      </View>
+
+      {districts.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.districtRow}
+        >
+          <Chip label="Tüm İlçeler" selected={district === null} onPress={() => setDistrict(null)} />
+          {districts.map((d) => (
+            <Chip
+              key={d}
+              label={d}
+              selected={district === d}
+              onPress={() => setDistrict(district === d ? null : d)}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      <ThemedText type="caption" themeColor="textSecondary">
+        {loading ? 'Yükleniyor...' : `${visible.length} mekan`}
+      </ThemedText>
+    </View>
   );
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <FlatList
-          data={filteredLocations}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <>
-              <ThemedText type="subtitle" style={styles.title}>
-                Şehri Keşfet
-              </ThemedText>
-
-              <TextField
-                style={styles.search}
-                placeholder="Mekan ara..."
-                value={search}
-                onChangeText={setSearch}
-                returnKeyType="search"
-                clearButtonMode="while-editing"
-              />
-
-              <View style={styles.filterRow}>
-                {FILTERS.map((filter) => (
-                  <Chip
-                    key={filter}
-                    label={filter}
-                    selected={filter === activeFilter}
-                    onPress={() => setActiveFilter(filter)}
-                  />
-                ))}
-              </View>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.avatarScroll}
-                contentContainerStyle={styles.avatarScrollContent}
+        {view === 'map' ? (
+          <View style={styles.mapContainer}>
+            {header}
+            <LocationMap locations={visible} onSelect={openLocation} style={styles.map} />
+          </View>
+        ) : (
+          <FlatList
+            data={visible}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={header}
+            renderItem={({ item }) => (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.card,
+                  { borderColor: item.isSponsored ? theme.highlight : theme.border },
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => openLocation(item)}
               >
-                {QUICK_CATEGORIES.map((item) => (
-                  <View key={item.id} style={styles.avatarItem}>
-                    <View style={[styles.avatarCircle, { backgroundColor: theme.highlightSoft }]} />
-                    <ThemedText type="caption" style={styles.avatarLabel}>
-                      {item.label}
+                <View style={[styles.cardImage, { backgroundColor: theme.highlightSoft }]}>
+                  <ThemedText style={styles.cardEmoji}>{categoryEmoji(item.category)}</ThemedText>
+                </View>
+                <View style={styles.cardContent}>
+                  <View style={styles.cardTitleRow}>
+                    <ThemedText type="defaultSemiBold" style={styles.cardTitle} numberOfLines={1}>
+                      {item.name}
                     </ThemedText>
+                    {item.rating ? (
+                      <ThemedText type="smallBold" style={{ color: theme.highlight }}>
+                        ★ {item.rating.toFixed(1)}
+                      </ThemedText>
+                    ) : null}
                   </View>
-                ))}
-              </ScrollView>
-
-              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                Tüm Mekanlar
-              </ThemedText>
-              {loading ? (
+                  {item.category || item.district ? (
+                    <ThemedText type="caption" themeColor="textSecondary">
+                      {[item.category, item.district].filter(Boolean).join(' · ')}
+                    </ThemedText>
+                  ) : null}
+                  <ThemedText type="caption" themeColor="textSecondary" numberOfLines={2}>
+                    {item.description}
+                  </ThemedText>
+                  <View style={styles.tagRow}>
+                    {item.isSponsored ? <Tag label="Sponsorlu" /> : null}
+                    {item.isFree ? <Tag label="Ücretsiz" tone="accent" /> : null}
+                  </View>
+                </View>
+              </Pressable>
+            )}
+            ListEmptyComponent={
+              !loading ? (
                 <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                  Yükleniyor...
+                  Bu filtrelere uyan mekan bulunamadı.
                 </ThemedText>
-              ) : null}
-            </>
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [
-                styles.card,
-                { borderColor: theme.border },
-                pressed && styles.pressed,
-              ]}
-              onPress={() =>
-                router.push({
-                  pathname: '/location-detail',
-                  params: {
-                    id: item.id,
-                    name: item.name,
-                    description: item.description,
-                  },
-                })
-              }
-            >
-              <View style={[styles.cardImage, { backgroundColor: theme.highlight }]} />
-              <View style={styles.cardContent}>
-                <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-                <ThemedText type="caption" themeColor="textSecondary">
-                  {item.description}
-                </ThemedText>
-              </View>
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            !loading ? (
-              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                Mekan bulunamadı.
-              </ThemedText>
-            ) : null
-          }
-        />
+              ) : null
+            }
+          />
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  Tarihi: '🏛️',
+  Müze: '🖼️',
+  Park: '🌳',
+  Manzara: '🌅',
+  Çarşı: '🛍️',
+  Sokak: '🚶',
+  Ada: '⛴️',
+};
+
+function categoryEmoji(category?: string) {
+  return (category && CATEGORY_EMOJI[category]) ?? '📍';
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-  },
-  title: { marginBottom: Spacing.three },
-  search: { marginBottom: Spacing.three },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    marginBottom: Spacing.three,
-  },
-  avatarScroll: { marginBottom: Spacing.four },
-  avatarScrollContent: { gap: Spacing.three, paddingRight: Spacing.four },
-  avatarItem: { alignItems: 'center', width: 64 },
-  avatarCircle: { width: 56, height: 56, borderRadius: 28, marginBottom: Spacing.one },
-  avatarLabel: { textAlign: 'center' },
-  sectionTitle: { marginBottom: Spacing.three },
+  safeArea: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four },
+  header: { gap: Spacing.three, marginBottom: Spacing.three },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  viewToggle: { flexDirection: 'row', gap: Spacing.one },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  districtRow: { gap: Spacing.two, paddingRight: Spacing.four },
+  mapContainer: { flex: 1, paddingBottom: Spacing.three },
+  map: { flex: 1 },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: {
     flexDirection: 'row',
@@ -180,7 +195,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pressed: { opacity: 0.7 },
-  cardImage: { width: 90 },
-  cardContent: { flex: 1, padding: Spacing.three, gap: 6 },
+  cardImage: { width: 80, alignItems: 'center', justifyContent: 'center' },
+  cardEmoji: { fontSize: 30, lineHeight: 36 },
+  cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  cardTitle: { flex: 1 },
+  tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });
