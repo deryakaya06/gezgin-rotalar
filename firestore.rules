@@ -46,7 +46,7 @@ service cloud.firestore {
 
     // packages/shared/src/constants.ts içindeki CLOUDINARY.cloudName ile aynı olmalı.
     function cloudinaryCloudName() {
-      return 'CLOUD_NAME';
+      return 'lgk3ljrv';
     }
 
     function validPhotoUrl(url) {
