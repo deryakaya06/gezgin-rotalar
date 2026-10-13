@@ -502,5 +502,23 @@
     "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918989/l0zytwhdntgoeh5flxvc.jpg",
     "coverPhotoCredit": "Josep Llauradó · CC BY-SA 2.1 es",
     "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_-_Pierre_Loti_Cafe_-_01.jpg"
+  },
+  {
+    "id": "karakoy-gulluoglu",
+    "name": "Karaköy Güllüoğlu",
+    "district": "Beyoğlu",
+    "category": "Lezzet",
+    "coordinates": {
+      "latitude": 41.0249,
+      "longitude": 28.981
+    },
+    "rating": 4.6,
+    "isFree": true,
+    "isSponsored": false,
+    "sponsorInfo": null,
+    "description": "1949'dan beri Karaköy'de baklava; fıstıklı ve kaymaklı çeşitleriyle ünlü tatlıcı.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791919766/oi0nmzlqz1ecb4s8umvz.jpg",
+    "coverPhotoCredit": "dronepicr · CC BY 2.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Pistachio_Baklava_from_Sarigerme,_Turkey_(49070918302).jpg"
   }
 ]

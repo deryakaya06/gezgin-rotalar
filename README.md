@@ -40,8 +40,14 @@ npx firebase-tools deploy --only firestore
 
 ```sh
 # scripts/locations.json içindeki mekanları yükler/günceller (tekrar çalıştırmak güvenli)
-ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run seed:locations
+npm run seed:locations
+
+# Eksik alanlı / kopya mekanları listeler; --delete ile listelenenlerden verilenleri siler
+npm run locations:audit
+npm run locations:audit -- --delete <id> <id>
 ```
+
+Betikler admin e-postasını ve şifreyi çalıştırıldıklarında sorar; şifre ekranda görünmez ve terminal geçmişine kaydedilmez.
 
 Kapak fotoğrafları Wikipedia/Wikimedia Commons'taki serbest lisanslı görsellerden alınır ve Cloudinary'ye yüklenir. Lisanslar fotoğrafçının adını istediği için künye (`coverPhotoCredit`) mekan detayında gösterilir.
 
