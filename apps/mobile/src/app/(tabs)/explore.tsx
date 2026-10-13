@@ -4,14 +4,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Location, WithId } from '@repo/shared';
 
+import { Image } from 'expo-image';
+
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TileStripe } from '@/components/tile-stripe';
 import { Chip } from '@/components/ui/chip';
 import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
-import { Radius, Spacing } from '@/constants/theme';
+import { OnPhoto, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { photoThumbnail } from '@/services/photos';
 import {
   LOCATION_FILTERS,
   districtsOf,
@@ -99,6 +103,7 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <TileStripe inset={Spacing.four} />
         {view === 'map' ? (
           <View style={styles.mapContainer}>
             {header}
@@ -119,33 +124,53 @@ export default function ExploreScreen() {
                   pressed && styles.pressed,
                 ]}
                 onPress={() => openLocation(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.name}, ${[item.category, item.district].filter(Boolean).join(', ')}`}
               >
-                <View style={[styles.cardImage, { backgroundColor: theme.highlightSoft }]}>
-                  <ThemedText style={styles.cardEmoji}>{categoryEmoji(item.category)}</ThemedText>
-                </View>
-                <View style={styles.cardContent}>
-                  <View style={styles.cardTitleRow}>
-                    <ThemedText type="defaultSemiBold" style={styles.cardTitle} numberOfLines={1}>
-                      {item.name}
-                    </ThemedText>
-                    {item.rating ? (
-                      <ThemedText type="smallBold" style={{ color: theme.highlight }}>
+                <View style={[styles.cover, { backgroundColor: theme.highlightSoft }]}>
+                  {item.coverPhotoUrl ? (
+                    <Image
+                      source={{ uri: photoThumbnail(item.coverPhotoUrl, 800, 440) }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      transition={150}
+                      accessibilityIgnoresInvertColors
+                    />
+                  ) : (
+                    <ThemedText style={styles.coverEmoji}>{categoryEmoji(item.category)}</ThemedText>
+                  )}
+                  {item.isSponsored ? (
+                    <View style={[styles.overlayBadge, styles.badgeLeft, { backgroundColor: theme.highlight }]}>
+                      <ThemedText type="caption" style={[styles.badgeText, { color: theme.onPrimary }]}>
+                        Sponsorlu
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                  {item.rating ? (
+                    <View style={[styles.overlayBadge, styles.badgeRight]}>
+                      <ThemedText type="caption" style={[styles.badgeText, styles.ratingText]}>
                         ★ {item.rating.toFixed(1)}
                       </ThemedText>
-                    ) : null}
-                  </View>
+                    </View>
+                  ) : null}
+                </View>
+                <View style={styles.cardContent}>
+                  <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                    {item.name}
+                  </ThemedText>
                   {item.category || item.district ? (
                     <ThemedText type="caption" themeColor="textSecondary">
                       {[item.category, item.district].filter(Boolean).join(' · ')}
                     </ThemedText>
                   ) : null}
-                  <ThemedText type="caption" themeColor="textSecondary" numberOfLines={2}>
+                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
                     {item.description}
                   </ThemedText>
-                  <View style={styles.tagRow}>
-                    {item.isSponsored ? <Tag label="Sponsorlu" /> : null}
-                    {item.isFree ? <Tag label="Ücretsiz" tone="accent" /> : null}
-                  </View>
+                  {item.isFree ? (
+                    <View style={styles.tagRow}>
+                      <Tag label="Ücretsiz Giriş" tone="accent" />
+                    </View>
+                  ) : null}
                 </View>
               </Pressable>
             )}
@@ -171,6 +196,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   Çarşı: '🛍️',
   Sokak: '🚶',
   Ada: '⛴️',
+  Lezzet: '🍰',
 };
 
 function categoryEmoji(category?: string) {
@@ -189,17 +215,25 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: {
-    flexDirection: 'row',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: Radius.large,
     overflow: 'hidden',
   },
-  pressed: { opacity: 0.7 },
-  cardImage: { width: 80, alignItems: 'center', justifyContent: 'center' },
-  cardEmoji: { fontSize: 30, lineHeight: 36 },
-  cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  cardTitle: { flex: 1 },
+  pressed: { opacity: 0.8 },
+  cover: { aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center' },
+  coverEmoji: { fontSize: 40, lineHeight: 48 },
+  overlayBadge: {
+    position: 'absolute',
+    top: Spacing.two,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.small,
+  },
+  badgeLeft: { left: Spacing.two },
+  badgeRight: { right: Spacing.two, backgroundColor: OnPhoto.scrim },
+  badgeText: { fontWeight: 700 },
+  ratingText: { color: OnPhoto.text },
+  cardContent: { padding: Spacing.three, gap: Spacing.one },
   tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });
