@@ -16,6 +16,7 @@ import { COLLECTIONS, type CheckIn, type UserProfile, type WithId } from '@repo/
 
 import { FollowButton } from '@/components/follow-button';
 import { ProfileSummary } from '@/components/profile-summary';
+import { CheckInPhoto } from '@/components/check-in-photo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
@@ -98,6 +99,7 @@ export default function UserProfileScreen() {
               <ThemedText type="caption" themeColor="textSecondary">
                 {formatDate(item.createdAt)}
               </ThemedText>
+              {item.photoUrl ? <CheckInPhoto url={item.photoUrl} style={styles.photo} /> : null}
               {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
             </Card>
           )}
@@ -125,5 +127,6 @@ const styles = StyleSheet.create({
   followButtonWrap: { alignSelf: 'stretch', marginTop: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: { gap: Spacing.one },
+  photo: { marginTop: Spacing.two },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

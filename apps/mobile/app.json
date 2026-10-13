@@ -32,6 +32,14 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Check-in'lerine fotoğraf ekleyebilmen için galerine erişmemiz gerekiyor.",
+          "cameraPermission": "Check-in yaparken fotoğraf çekebilmen için kameraya erişmemiz gerekiyor.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

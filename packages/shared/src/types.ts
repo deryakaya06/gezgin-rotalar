@@ -65,6 +65,8 @@ export type CheckIn = {
   note: string;
   /** POINTS_PER_CHECKIN ya da (24 saat içinde tekrar ise) 0. */
   points: number;
+  /** Cloudinary'deki fotoğrafın adresi (https://res.cloudinary.com/...). */
+  photoUrl?: string;
   createdAt: FirestoreTimestamp | null;
 };
 

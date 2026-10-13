@@ -10,6 +10,7 @@ import {
 } from '@repo/shared';
 
 import { LocationMap } from '@/components/location-map';
+import { PhotoPicker } from '@/components/photo-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
@@ -22,6 +23,7 @@ import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
+import { isPhotoUploadConfigured, uploadPhoto } from '@/services/photos';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,7 +34,8 @@ export default function LocationDetailScreen() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'notFound'>('loading');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [saving, setSaving] = useState<false | 'uploading' | 'saving'>(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,13 +54,24 @@ export default function LocationDetailScreen() {
     };
   }, [id]);
 
-  function handleCheckIn() {
+  async function handleCheckIn() {
     if (!user || !location) return;
 
-    setSaving(true);
     setMessage('');
+    let photoUrl: string | undefined;
+    if (photoUri) {
+      setSaving('uploading');
+      try {
+        photoUrl = await uploadPhoto(photoUri);
+      } catch (error: any) {
+        setMessage('Fotoğraf yüklenemedi: ' + error.message);
+        setSaving(false);
+        return;
+      }
+    }
 
-    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim())
+    setSaving('saving');
+    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim(), photoUrl)
       .then((points) => {
         setMessage(
           points > 0
@@ -65,6 +79,7 @@ export default function LocationDetailScreen() {
             : `Check-in kaydedildi. Bu mekana son ${DUPLICATE_CHECKIN_WINDOW_HOURS} saatte zaten check-in yaptığın için puan verilmedi.`
         );
         setNote('');
+        setPhotoUri(null);
       })
       .catch((error) => {
         setMessage('Hata: ' + error.message);
@@ -139,6 +154,13 @@ export default function LocationDetailScreen() {
           ) : null}
 
           <View style={styles.checkIn}>
+            {isPhotoUploadConfigured ? (
+              <>
+                <ThemedText type="smallBold">Fotoğraf (isteğe bağlı)</ThemedText>
+                <PhotoPicker uri={photoUri} onChange={setPhotoUri} disabled={!!saving} />
+              </>
+            ) : null}
+
             <ThemedText type="smallBold">Not (isteğe bağlı)</ThemedText>
             <TextField
               style={styles.noteInput}
@@ -149,9 +171,15 @@ export default function LocationDetailScreen() {
               multiline
             />
             <Button
-              title={saving ? 'Kaydediliyor...' : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`}
+              title={
+                saving === 'uploading'
+                  ? 'Fotoğraf yükleniyor...'
+                  : saving === 'saving'
+                    ? 'Kaydediliyor...'
+                    : `Check-in Yap (+${POINTS_PER_CHECKIN} Puan)`
+              }
               onPress={handleCheckIn}
-              disabled={saving}
+              disabled={!!saving}
             />
             {message ? (
               <ThemedText type="small" style={styles.centered}>
