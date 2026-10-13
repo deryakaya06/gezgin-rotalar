@@ -6,11 +6,15 @@ const MAX_SIDE = 1600;
 
 export const isPhotoUploadConfigured = !!CLOUDINARY.cloudName && !!CLOUDINARY.uploadPreset;
 
+export type PickedPhoto = { uri: string; width: number; height: number };
+
 /**
- * Kameradan veya galeriden tek fotoğraf seçtirir. İzin verilmezse veya kullanıcı
- * vazgeçerse null döner; izin reddi için 'denied' döner.
+ * Kameradan veya galeriden tek fotoğraf seçtirir. Kullanıcı vazgeçerse null,
+ * izin verilmezse 'denied' döner.
  */
-export async function pickPhoto(source: 'camera' | 'library'): Promise<string | null | 'denied'> {
+export async function pickPhoto(
+  source: 'camera' | 'library'
+): Promise<PickedPhoto | null | 'denied'> {
   const permission =
     source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -28,42 +32,71 @@ export async function pickPhoto(source: 'camera' | 'library'): Promise<string | 
       ? await ImagePicker.launchCameraAsync(options)
       : await ImagePicker.launchImageLibraryAsync(options);
 
-  return result.canceled ? null : result.assets[0].uri;
+  if (result.canceled) return null;
+  const { uri, width, height } = result.assets[0];
+  return { uri, width, height };
 }
 
-/** Uzun kenarı en fazla 1600 px olacak şekilde küçültür ve JPEG olarak sıkıştırır. */
-async function shrink(uri: string) {
+/**
+ * Uzun kenarı en fazla 1600 px olacak şekilde küçültür, JPEG olarak sıkıştırır
+ * ve base64 metin olarak döndürür.
+ */
+async function shrinkToBase64({ uri, width, height }: PickedPhoto) {
   const context = ImageManipulator.manipulate(uri);
-  const original = await context.renderAsync();
-  const scale = Math.min(1, MAX_SIDE / Math.max(original.width, original.height));
-  if (scale < 1) {
-    context.resize({ width: Math.round(original.width * scale) });
+  const longest = Math.max(width, height);
+  if (longest > MAX_SIDE) {
+    context.resize(width >= height ? { width: MAX_SIDE } : { height: MAX_SIDE });
   }
   const image = await context.renderAsync();
-  const saved = await image.saveAsync({ compress: 0.75, format: SaveFormat.JPEG });
-  return saved.uri;
+  const saved = await image.saveAsync({ compress: 0.75, format: SaveFormat.JPEG, base64: true });
+  if (!saved.base64) throw new Error('base64 üretilemedi');
+  return saved.base64;
 }
 
 /** Fotoğrafı küçültüp Cloudinary'ye yükler ve herkese açık adresini döndürür. */
-export async function uploadPhoto(uri: string): Promise<string> {
+export async function uploadPhoto(photo: PickedPhoto): Promise<string> {
   if (!isPhotoUploadConfigured) {
     throw new Error('Fotoğraf yükleme henüz ayarlanmadı (CLOUDINARY).');
   }
 
-  const body = new FormData();
-  // React Native'de dosya, { uri, name, type } nesnesi olarak eklenir.
-  body.append('file', { uri: await shrink(uri), name: 'check-in.jpg', type: 'image/jpeg' } as any);
-  body.append('upload_preset', CLOUDINARY.uploadPreset);
-
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`,
-    { method: 'POST', body }
-  );
-  const json = await response.json();
-  if (!response.ok) {
-    throw new Error(json?.error?.message ?? 'Fotoğraf yüklenemedi.');
+  let base64: string;
+  try {
+    base64 = await shrinkToBase64(photo);
+  } catch (error: any) {
+    console.log('Fotoğraf küçültülemedi:', error);
+    throw new Error('Fotoğraf hazırlanamadı (' + (error?.message ?? error) + ')');
   }
-  return json.secure_url as string;
+
+  // Expo'nun fetch'i FormData'da { uri, name, type } dosya nesnesini desteklemiyor
+  // ("Unsupported FormDataPart implementation"); Cloudinary data URI'yi JSON içinde kabul ediyor.
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file: `data:image/jpeg;base64,${base64}`,
+          upload_preset: CLOUDINARY.uploadPreset,
+        }),
+      }
+    );
+  } catch (error: any) {
+    console.log('Cloudinary isteği gönderilemedi:', error);
+    throw new Error('Sunucuya ulaşılamadı (' + (error?.message ?? error) + ')');
+  }
+
+  const text = await response.text();
+  if (!response.ok) {
+    console.log('Cloudinary hatası:', response.status, text);
+    let message = text.slice(0, 200);
+    try {
+      message = JSON.parse(text)?.error?.message ?? message;
+    } catch {}
+    throw new Error(`Cloudinary ${response.status}: ${message}`);
+  }
+  return JSON.parse(text).secure_url as string;
 }
 
 /**
