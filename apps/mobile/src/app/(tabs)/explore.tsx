@@ -184,6 +184,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   Çarşı: '🛍️',
   Sokak: '🚶',
   Ada: '⛴️',
+  Lezzet: '🍰',
 };
 
 function categoryEmoji(category?: string) {

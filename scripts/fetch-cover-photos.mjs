@@ -27,6 +27,8 @@ const COMMONS_QUERIES = {
   'emirgan-korusu': 'Emirgan Park tulips Istanbul',
   'yeldegirmeni': 'Yeldeğirmeni Kadıköy street',
   'kadikoy-carsi': 'Kadıköy market street',
+  // Karaköy şubesinin serbest lisanslı fotoğrafı yok; mekanın ünlü olduğu tatlı gösterilir.
+  'karakoy-gulluoglu': 'Turkish baklava pistachio',
 };
 
 /** Logo, harita, ikon ve kolajlar kapak fotoğrafı olamaz. */
