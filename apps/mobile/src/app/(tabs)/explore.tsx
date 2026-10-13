@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Location, WithId } from '@repo/shared';
 
+import { Image } from 'expo-image';
+
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,6 +14,7 @@ import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { photoThumbnail } from '@/services/photos';
 import {
   LOCATION_FILTERS,
   districtsOf,
@@ -120,9 +123,19 @@ export default function ExploreScreen() {
                 ]}
                 onPress={() => openLocation(item)}
               >
-                <View style={[styles.cardImage, { backgroundColor: theme.highlightSoft }]}>
-                  <ThemedText style={styles.cardEmoji}>{categoryEmoji(item.category)}</ThemedText>
-                </View>
+                {item.coverPhotoUrl ? (
+                  <Image
+                    source={{ uri: photoThumbnail(item.coverPhotoUrl, 240, 300) }}
+                    style={[styles.cardImage, { backgroundColor: theme.highlightSoft }]}
+                    contentFit="cover"
+                    transition={150}
+                    accessibilityIgnoresInvertColors
+                  />
+                ) : (
+                  <View style={[styles.cardImage, { backgroundColor: theme.highlightSoft }]}>
+                    <ThemedText style={styles.cardEmoji}>{categoryEmoji(item.category)}</ThemedText>
+                  </View>
+                )}
                 <View style={styles.cardContent}>
                   <View style={styles.cardTitleRow}>
                     <ThemedText type="defaultSemiBold" style={styles.cardTitle} numberOfLines={1}>
@@ -195,7 +208,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pressed: { opacity: 0.7 },
-  cardImage: { width: 80, alignItems: 'center', justifyContent: 'center' },
+  cardImage: { width: 96, alignItems: 'center', justifyContent: 'center' },
   cardEmoji: { fontSize: 30, lineHeight: 36 },
   cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

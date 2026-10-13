@@ -12,7 +12,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Ceneviz döneminden kalan kule; terasından Haliç ve Boğaz manzarası."
+    "description": "Ceneviz döneminden kalan kule; terasından Haliç ve Boğaz manzarası.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918823/i8w6miedjtzaqstnc4tr.jpg",
+    "coverPhotoCredit": "A.Savin · FAL",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_asv2020-02_img48_Galata_Tower.jpg"
   },
   {
     "id": "istiklal-caddesi",
@@ -27,7 +30,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Nostaljik tramvayı, pasajları ve kitapçılarıyla şehrin en canlı caddesi."
+    "description": "Nostaljik tramvayı, pasajları ve kitapçılarıyla şehrin en canlı caddesi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918824/gk3mphx240gx1vcg48je.jpg",
+    "coverPhotoCredit": "Mark Ahsmann · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istiklal_Avenue_in_Istanbul_-_Turkey.jpg"
   },
   {
     "id": "pera-muzesi",
@@ -42,7 +48,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Kaplumbağa Terbiyecisi'nin evi; Oryantalist resim ve değişen sergiler."
+    "description": "Kaplumbağa Terbiyecisi'nin evi; Oryantalist resim ve değişen sergiler.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918826/in9ypox1hx12uoswrsj2.jpg",
+    "coverPhotoCredit": "Tatiana Matlina · CC BY-SA 3.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_Beyoglu_Pera_museum.jpg"
   },
   {
     "id": "istanbul-modern",
@@ -57,7 +66,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Karaköy sahilinde çağdaş sanat müzesi."
+    "description": "Karaköy sahilinde çağdaş sanat müzesi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918827/g4ggf8nk5zf25ufrybs4.jpg",
+    "coverPhotoCredit": "vlyalcin · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Outside_view_of_the_Istanbul_Modern,_2022.jpg"
   },
   {
     "id": "miniaturk",
@@ -72,7 +84,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Türkiye'nin simge yapılarının minyatürlerinden oluşan açık hava müzesi."
+    "description": "Türkiye'nin simge yapılarının minyatürlerinden oluşan açık hava müzesi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918828/u2kdgg6lynxccqdm1vak.jpg",
+    "coverPhotoCredit": "VikiPicture · CC BY-SA 3.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Miniat%C3%BCrk_genel_g%C3%B6r%C3%BCn%C3%BCm.JPG"
   },
   {
     "id": "ayasofya",
@@ -87,7 +102,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Bin beş yüz yıllık kubbesiyle şehrin simgesi."
+    "description": "Bin beş yüz yıllık kubbesiyle şehrin simgesi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918829/tjd9rijaiepuyqxwzpzy.jpg",
+    "coverPhotoCredit": "Adli Wahid · CC BY-SA 3.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Hagia_Sophia_(228968325).jpeg"
   },
   {
     "id": "sultanahmet-camii",
@@ -102,7 +120,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Altı minaresi ve mavi çinileriyle bilinen Mavi Cami."
+    "description": "Altı minaresi ve mavi çinileriyle bilinen Mavi Cami.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918830/mhgw2hopipz5zcjezbek.jpg",
+    "coverPhotoCredit": "Pedro Szekely from Los Angeles, USA · CC BY-SA 2.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_(34223582516)_(cropped).jpg"
   },
   {
     "id": "topkapi-sarayi",
@@ -117,7 +138,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Osmanlı padişahlarının yaklaşık dört yüz yıl yaşadığı saray."
+    "description": "Osmanlı padişahlarının yaklaşık dört yüz yıl yaşadığı saray.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918831/zlng0vpwoe9xaftdbnha.jpg",
+    "coverPhotoCredit": "Carlos Delgado · CC BY-SA 3.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Topkap%C4%B1_-_01.jpg"
   },
   {
     "id": "yerebatan-sarnici",
@@ -132,7 +156,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Medusa başlı sütunlarıyla yer altındaki Bizans sarnıcı."
+    "description": "Medusa başlı sütunlarıyla yer altındaki Bizans sarnıcı.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918832/r0leleugayqdyk9oemhq.jpg",
+    "coverPhotoCredit": "Diego Delso · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Cisterna_Bas%C3%ADlica,_Estambul,_Turqu%C3%ADa,_2024-09-28,_DD_58-60_HDR.jpg"
   },
   {
     "id": "kapalicarsi",
@@ -147,7 +174,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Dünyanın en eski ve büyük kapalı çarşılarından biri."
+    "description": "Dünyanın en eski ve büyük kapalı çarşılarından biri.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918833/tmbupsbdnfgh8ldtew4o.jpg",
+    "coverPhotoCredit": "A.Savin · FAL",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_asv2021-11_img41_Grand_Bazaar.jpg"
   },
   {
     "id": "misir-carsisi",
@@ -162,7 +192,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Baharat, lokum ve kuruyemiş kokularıyla Eminönü'nün tarihi çarşısı."
+    "description": "Baharat, lokum ve kuruyemiş kokularıyla Eminönü'nün tarihi çarşısı.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918835/xd2twigh7prsc6y0id0k.jpg",
+    "coverPhotoCredit": "Robot8A · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Spice_Bazaar_Istanbul_Feb_2020,_img_2.jpg"
   },
   {
     "id": "suleymaniye-camii",
@@ -177,7 +210,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Mimar Sinan'ın eseri; avlusundan Haliç manzarası."
+    "description": "Mimar Sinan'ın eseri; avlusundan Haliç manzarası.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918837/hmrvzhkqrnbpmkaw7mvn.jpg",
+    "coverPhotoCredit": "Hunanuk · CC0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:S%C3%BCleymaniyeMosqueIstanbul_(cropped).jpg"
   },
   {
     "id": "galata-koprusu",
@@ -192,7 +228,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Oltacıları ve balık ekmekçileriyle Haliç'in iki yakasını bağlar."
+    "description": "Oltacıları ve balık ekmekçileriyle Haliç'in iki yakasını bağlar.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918838/hs4wnwkh8j7d327sd0hx.jpg",
+    "coverPhotoCredit": "Rrburke · CC BY-SA 3.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Galata_Bridge_from_Galata_Tower.JPG"
   },
   {
     "id": "balat",
@@ -207,7 +246,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Renkli evleri, antikacıları ve kafeleriyle tarihi semt."
+    "description": "Renkli evleri, antikacıları ve kafeleriyle tarihi semt.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918839/fqgykxfp6csh4l7azmjt.jpg",
+    "coverPhotoCredit": "Antoloji · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Balat_houses.jpg"
   },
   {
     "id": "dolmabahce-sarayi",
@@ -222,7 +264,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Boğaz kıyısında 19. yüzyıl Osmanlı sarayı."
+    "description": "Boğaz kıyısında 19. yüzyıl Osmanlı sarayı.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918841/wygjpq5zcw8nu9n81qct.jpg",
+    "coverPhotoCredit": "flowcomm · CC BY 2.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Dolmabahce_Istanbul_Turkey.jpg"
   },
   {
     "id": "ortakoy-camii",
@@ -237,7 +282,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Köprü manzarasıyla Boğaz'ın en çok fotoğraflanan camisi."
+    "description": "Köprü manzarasıyla Boğaz'ın en çok fotoğraflanan camisi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918843/pcwrt63ymrjl99wg50gj.jpg",
+    "coverPhotoCredit": "A.Savin · FAL",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_asv2020-02_img60_Ortak%C3%B6y_Mosque.jpg"
   },
   {
     "id": "bebek-sahili",
@@ -252,7 +300,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Boğaz kıyısında yürüyüş ve kahve molası için."
+    "description": "Boğaz kıyısında yürüyüş ve kahve molası için.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918844/q6ko9odrarjnnjka8dtp.jpg",
+    "coverPhotoCredit": "Ahmetbilgin208 · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:A_Curve_In_Bebek.jpg"
   },
   {
     "id": "yildiz-parki",
@@ -267,7 +318,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Şehrin ortasında köşkleri ve havuzlarıyla büyük koru."
+    "description": "Şehrin ortasında köşkleri ve havuzlarıyla büyük koru.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918983/omu3bympd5lsslzqmtlv.jpg",
+    "coverPhotoCredit": "Chapultepec · Public domain",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Yildiz_Park_03.jpg"
   },
   {
     "id": "moda-sahili",
@@ -282,7 +336,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Çimlerde gün batımı izlemek için Anadolu yakasının favorisi."
+    "description": "Çimlerde gün batımı izlemek için Anadolu yakasının favorisi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791919138/r016ueoawb8hvqbhfeqi.jpg",
+    "coverPhotoCredit": "Aziz Akbiyik · CC BY-SA 3.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Moda_Park_-_panoramio.jpg"
   },
   {
     "id": "kadikoy-carsi",
@@ -297,7 +354,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Balıkçıları, şarküterileri ve meyhaneleriyle canlı çarşı."
+    "description": "Balıkçıları, şarküterileri ve meyhaneleriyle canlı çarşı.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918847/fpfgwl8lkfsn4vzu8jqz.jpg",
+    "coverPhotoCredit": "William Neuheisel from DC, US · CC BY 2.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Shopping_the_Kad%C4%B1k%C3%B6y_Market_(6418910915).jpg"
   },
   {
     "id": "yeldegirmeni",
@@ -312,7 +372,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Duvar resimleri ve küçük kafeleriyle sakin bir semt."
+    "description": "Duvar resimleri ve küçük kafeleriyle sakin bir semt.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918848/gbrbvt8il6t8991jojtn.jpg",
+    "coverPhotoCredit": "Vano111ru · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Konut_%E2%80%94_Rasimpa%C5%9Fa,_Yelde%C4%9Firmeni,_15.jpg"
   },
   {
     "id": "kiz-kulesi",
@@ -327,7 +390,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Boğaz'ın girişinde küçük adacık üzerindeki efsanevi kule."
+    "description": "Boğaz'ın girişinde küçük adacık üzerindeki efsanevi kule.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918849/hdmjcg5tziipkq6qkudn.jpg",
+    "coverPhotoCredit": "Jorge Franganillo · CC BY 2.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_K%C4%B1z_Kulesi_(54511155871)_(cropped).jpg"
   },
   {
     "id": "camlica-tepesi",
@@ -342,7 +408,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Şehrin iki yakasını birden gören en yüksek tepelerinden."
+    "description": "Şehrin iki yakasını birden gören en yüksek tepelerinden.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791919153/tdj7rxecpct4amggq1ew.jpg",
+    "coverPhotoCredit": "Julia Sumangil · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:%C3%87aml%C4%B1ca_Hill_public_park.jpg"
   },
   {
     "id": "buyukada",
@@ -357,7 +426,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Köşkleri, çam ormanları ve bisiklet turlarıyla adaların en büyüğü."
+    "description": "Köşkleri, çam ormanları ve bisiklet turlarıyla adaların en büyüğü.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918852/p8bm4jardkveigqtaoux.jpg",
+    "coverPhotoCredit": "Metuboy · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:BuyukadaMainSquare.jpg"
   },
   {
     "id": "heybeliada",
@@ -372,7 +444,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Daha sakin; koyları ve yürüyüş yollarıyla bilinir."
+    "description": "Daha sakin; koyları ve yürüyüş yollarıyla bilinir.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918853/ghy8tvos0bjanl9weapz.jpg",
+    "coverPhotoCredit": "Maurice Flesier · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Heybeliada_from_B%C3%BCy%C3%BCkada.jpg"
   },
   {
     "id": "emirgan-korusu",
@@ -387,7 +462,10 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Nisan'da lale festivaliyle ünlü Boğaz korusu."
+    "description": "Nisan'da lale festivaliyle ünlü Boğaz korusu.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918857/jnnaje7vf4sumi6foxae.jpg",
+    "coverPhotoCredit": "Janabaevazizbek · CC BY-SA 4.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_Tulip_Festival_in_Emirgan_Park_(01).jpg"
   },
   {
     "id": "rumeli-hisari",
@@ -402,7 +480,10 @@
     "isFree": false,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Fatih Sultan Mehmet'in İstanbul'un fethinden önce yaptırdığı hisar."
+    "description": "Fatih Sultan Mehmet'in İstanbul'un fethinden önce yaptırdığı hisar.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918858/pcquglnpfk1lla2tsj3q.jpg",
+    "coverPhotoCredit": "flowcomm · CC BY 2.0",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul,_Turkey_-_53686764072.jpg"
   },
   {
     "id": "pierre-loti",
@@ -417,6 +498,9 @@
     "isFree": true,
     "isSponsored": false,
     "sponsorInfo": null,
-    "description": "Teleferikle çıkılan, Haliç'e bakan tepe ve çay bahçesi."
+    "description": "Teleferikle çıkılan, Haliç'e bakan tepe ve çay bahçesi.",
+    "coverPhotoUrl": "https://res.cloudinary.com/lgk3ljrv/image/upload/v1791918989/l0zytwhdntgoeh5flxvc.jpg",
+    "coverPhotoCredit": "Josep Llauradó · CC BY-SA 2.1 es",
+    "coverPhotoSource": "https://commons.wikimedia.org/wiki/File:Istanbul_-_Pierre_Loti_Cafe_-_01.jpg"
   }
 ]

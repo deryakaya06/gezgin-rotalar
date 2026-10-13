@@ -103,6 +103,6 @@ export async function uploadPhoto(photo: PickedPhoto): Promise<string> {
  * Cloudinary adresine boyut dönüşümü ekler; liste ve akışta tam boy yerine
  * küçük, otomatik formatlı bir kopya indirilir.
  */
-export function photoThumbnail(url: string, size: number) {
-  return url.replace('/image/upload/', `/image/upload/c_fill,w_${size},h_${size},q_auto,f_auto/`);
+export function photoThumbnail(url: string, width: number, height = width) {
+  return url.replace('/image/upload/', `/image/upload/c_fill,w_${width},h_${height},q_auto,f_auto/`);
 }

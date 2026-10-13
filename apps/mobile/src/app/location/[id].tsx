@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import {
@@ -18,12 +19,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
-import { isPhotoUploadConfigured, uploadPhoto, type PickedPhoto } from '@/services/photos';
+import {
+  isPhotoUploadConfigured,
+  photoThumbnail,
+  uploadPhoto,
+  type PickedPhoto,
+} from '@/services/photos';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -109,6 +115,30 @@ export default function LocationDetailScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <BackButton />
+
+          {location.coverPhotoUrl ? (
+            <View style={styles.coverBlock}>
+              <Image
+                source={{ uri: photoThumbnail(location.coverPhotoUrl, 1200, 750) }}
+                style={[styles.cover, { backgroundColor: theme.backgroundElement }]}
+                contentFit="cover"
+                transition={200}
+                accessibilityLabel={`${location.name} fotoğrafı`}
+              />
+              {location.coverPhotoCredit ? (
+                <Pressable
+                  disabled={!location.coverPhotoSource}
+                  onPress={() => location.coverPhotoSource && Linking.openURL(location.coverPhotoSource)}
+                  hitSlop={6}
+                >
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    Fotoğraf: {location.coverPhotoCredit}
+                    {location.coverPhotoSource ? ' · Wikimedia Commons' : ''}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.titleBlock}>
             <ThemedText type="subtitle">{location.name}</ThemedText>
@@ -202,6 +232,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
     gap: Spacing.three,
   },
+  coverBlock: { gap: Spacing.one },
+  cover: { width: '100%', aspectRatio: 16 / 10, borderRadius: Radius.large },
   titleBlock: { gap: Spacing.one },
   tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   sponsorCard: { gap: Spacing.one },
