@@ -19,6 +19,6 @@ export const DUPLICATE_CHECKIN_WINDOW_HOURS = 24;
  * cloudName firestore.rules içindeki cloudinaryCloudName() ile aynı olmalı.
  */
 export const CLOUDINARY = {
-  cloudName: '',
-  uploadPreset: '',
+  cloudName: 'lgk3ljrv',
+  uploadPreset: 'gezgin-checkin',
 } as const;
