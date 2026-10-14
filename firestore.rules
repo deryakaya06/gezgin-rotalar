@@ -35,6 +35,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(uid)/followers/$(followerId);
     }
 
+    function likePath(checkInId, uid) {
+      return /databases/$(database)/documents/check_ins/$(checkInId)/likes/$(uid);
+    }
+
     function visitPath(uid, locationId) {
       return /databases/$(database)/documents/users/$(uid)/visits/$(locationId);
     }
@@ -218,8 +222,39 @@ service cloud.firestore {
         // Kullanıcının puan/ziyaret sayacı aynı batch'te artırılmalıdır.
         && getAfter(userPath(request.auth.uid)).data.lastCheckInId == checkInId;
 
+      // Tek izin verilen değişiklik beğeni sayacı: yalnızca ±1 ve aynı batch'te
+      // isteği yapanın beğeni kaydı eklenmiş/silinmiş olmalı.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+        && (
+          (
+            request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1
+            && !exists(likePath(checkInId, request.auth.uid))
+            && existsAfter(likePath(checkInId, request.auth.uid))
+          )
+          || (
+            request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1
+            && exists(likePath(checkInId, request.auth.uid))
+            && !existsAfter(likePath(checkInId, request.auth.uid))
+          )
+        );
+
       // Silme puanı geri almayı gerektirir; moderasyon admin panelinden yapılacak.
-      allow update, delete: if false;
+      allow delete: if false;
+
+      // check_ins/{id}/likes/{uid}: kullanıcı yalnızca kendi beğenisini ekler/siler;
+      // sayaç aynı batch'te güncellenmelidir.
+      match /likes/{likerId} {
+        allow read: if signedIn();
+        allow create: if isOwner(likerId)
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          && getAfter(checkInPath(checkInId)).data.likeCount
+               == get(checkInPath(checkInId)).data.get('likeCount', 0) + 1;
+        allow delete: if isOwner(likerId)
+          && getAfter(checkInPath(checkInId)).data.likeCount
+               == get(checkInPath(checkInId)).data.get('likeCount', 0) - 1;
+      }
     }
   }
 }
