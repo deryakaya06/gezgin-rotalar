@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
 import { TextField } from '@/components/ui/text-field';
+import { FadeInItem } from '@/components/ui/motion';
 import { UserRow } from '@/components/user-row';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { searchUsers } from '@/services/users';
@@ -62,7 +63,11 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => <UserRow user={item} />}
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index}>
+              <UserRow user={item} />
+            </FadeInItem>
+          )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.empty}>
               {error

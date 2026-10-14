@@ -15,6 +15,7 @@ import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
+import { FadeInItem } from '@/components/ui/motion';
 import { Tag } from '@/components/ui/tag';
 import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -93,30 +94,32 @@ export default function RoutesScreen() {
               </ThemedText>
             </>
           }
-          renderItem={({ item }) => (
-            <Card style={styles.card}>
-              {item.photoUrl ? (
-                <CheckInPhoto url={item.photoUrl} size={240} style={styles.cardPhoto} />
-              ) : (
-                <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
-                  <ThemedText style={styles.cardEmoji}>📍</ThemedText>
-                </View>
-              )}
-              <View style={styles.cardContent}>
-                <View style={styles.cardTitleRow}>
-                  <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
-                    {item.locationName}
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index}>
+              <Card style={styles.card}>
+                {item.photoUrl ? (
+                  <CheckInPhoto url={item.photoUrl} size={240} style={styles.cardPhoto} />
+                ) : (
+                  <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
+                    <ThemedText style={styles.cardEmoji}>📍</ThemedText>
+                  </View>
+                )}
+                <View style={styles.cardContent}>
+                  <View style={styles.cardTitleRow}>
+                    <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+                      {item.locationName}
+                    </ThemedText>
+                    {/* Liste onSnapshot ile dinlendiği için silinen check-in kendiliğinden kaybolur. */}
+                    <DeleteCheckInButton checkIn={item} />
+                  </View>
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    {formatDate(item.createdAt)}
                   </ThemedText>
-                  {/* Liste onSnapshot ile dinlendiği için silinen check-in kendiliğinden kaybolur. */}
-                  <DeleteCheckInButton checkIn={item} />
+                  {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
+                  {item.points ? <Tag label={`+${item.points} puan`} /> : null}
                 </View>
-                <ThemedText type="caption" themeColor="textSecondary">
-                  {formatDate(item.createdAt)}
-                </ThemedText>
-                {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
-                {item.points ? <Tag label={`+${item.points} puan`} /> : null}
-              </View>
-            </Card>
+              </Card>
+            </FadeInItem>
           )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.emptyText}>

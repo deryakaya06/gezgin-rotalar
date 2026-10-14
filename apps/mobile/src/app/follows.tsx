@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
 import { Chip } from '@/components/ui/chip';
+import { FadeInItem } from '@/components/ui/motion';
 import { UserRow } from '@/components/user-row';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { fetchFollowList } from '@/services/users';
@@ -56,7 +57,11 @@ export default function FollowsScreen() {
           data={users ?? []}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <UserRow user={item} />}
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index}>
+              <UserRow user={item} />
+            </FadeInItem>
+          )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.empty}>
               {error

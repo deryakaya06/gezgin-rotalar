@@ -9,6 +9,7 @@ import { FollowButton } from '@/components/follow-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
+import { FadeInItem } from '@/components/ui/motion';
 import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
@@ -61,41 +62,43 @@ export default function LeaderboardScreen() {
             const isMe = item.id === currentUserId;
             // Profili açan alan ile takip butonu kardeş öğeler: web'de düğme içinde düğme olamaz.
             return (
-              <View
-                style={[
-                  styles.row,
-                  isMe
-                    ? { borderColor: theme.highlight, backgroundColor: theme.highlightSoft, borderWidth: 1 }
-                    : { borderColor: theme.border, backgroundColor: theme.surface },
-                ]}
-              >
-                <Pressable
-                  style={({ pressed }) => [styles.main, pressed && styles.pressed]}
-                  onPress={() =>
+              <FadeInItem index={index}>
+                <View
+                  style={[
+                    styles.row,
                     isMe
-                      ? router.navigate('/(tabs)/profile')
-                      : router.push({ pathname: '/user/[id]', params: { id: item.id } })
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={`${index + 1}. sıra, ${item.displayName}, ${item.totalPoints} puan`}
+                      ? { borderColor: theme.highlight, backgroundColor: theme.highlightSoft, borderWidth: 1 }
+                      : { borderColor: theme.border, backgroundColor: theme.surface },
+                  ]}
                 >
-                  <ThemedText type="defaultSemiBold" style={styles.rank}>
-                    #{index + 1}
-                  </ThemedText>
-                  <View style={styles.rowContent}>
-                    <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                      {item.displayName} {isMe ? '(Sen)' : ''}
+                  <Pressable
+                    style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+                    onPress={() =>
+                      isMe
+                        ? router.navigate('/(tabs)/profile')
+                        : router.push({ pathname: '/user/[id]', params: { id: item.id } })
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`${index + 1}. sıra, ${item.displayName}, ${item.totalPoints} puan`}
+                  >
+                    <ThemedText type="defaultSemiBold" style={styles.rank}>
+                      #{index + 1}
                     </ThemedText>
-                    <ThemedText type="caption" themeColor="textSecondary">
-                      {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
+                    <View style={styles.rowContent}>
+                      <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                        {item.displayName} {isMe ? '(Sen)' : ''}
+                      </ThemedText>
+                      <ThemedText type="caption" themeColor="textSecondary">
+                        {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {item.totalPoints} puan
                     </ThemedText>
-                  </View>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    {item.totalPoints} puan
-                  </ThemedText>
-                </Pressable>
-                <FollowButton userId={item.id} />
-              </View>
+                  </Pressable>
+                  <FollowButton userId={item.id} />
+                </View>
+              </FadeInItem>
             );
           }}
           ListEmptyComponent={

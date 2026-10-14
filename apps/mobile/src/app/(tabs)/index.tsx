@@ -24,6 +24,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
+import { FadeInItem } from '@/components/ui/motion';
 import { Tag } from '@/components/ui/tag';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -227,36 +228,38 @@ export default function HomeScreen() {
               </View>
             </>
           }
-          renderItem={({ item }) => (
-            <Card style={styles.postCard}>
-              <View style={styles.postTopRow}>
-                <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
-                  <Avatar photoUrl={item.authorPhotoUrl} accountType={item.accountType} size={36} />
-                  <View style={styles.postHeaderText}>
-                    <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
-                    <ThemedText type="caption" themeColor="textSecondary">
-                      {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
-                      {formatDate(item.createdAt)}
-                    </ThemedText>
-                  </View>
-                </Pressable>
-                <DeleteCheckInButton
-                  checkIn={item}
-                  onDeleted={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
-                />
-              </View>
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index}>
+              <Card style={styles.postCard}>
+                <View style={styles.postTopRow}>
+                  <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
+                    <Avatar photoUrl={item.authorPhotoUrl} accountType={item.accountType} size={36} />
+                    <View style={styles.postHeaderText}>
+                      <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
+                      <ThemedText type="caption" themeColor="textSecondary">
+                        {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
+                        {formatDate(item.createdAt)}
+                      </ThemedText>
+                    </View>
+                  </Pressable>
+                  <DeleteCheckInButton
+                    checkIn={item}
+                    onDeleted={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
+                  />
+                </View>
 
-              <Tag label={item.locationName} tone="accent" />
+                <Tag label={item.locationName} tone="accent" />
 
-              {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
+                {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
 
-              {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
+                {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
 
-              <View style={styles.postFooter}>
-                <LikeButton checkInId={item.id} initialCount={item.likeCount ?? 0} />
-                {item.points ? <Tag label={`+${item.points} puan`} /> : null}
-              </View>
-            </Card>
+                <View style={styles.postFooter}>
+                  <LikeButton checkInId={item.id} initialCount={item.likeCount ?? 0} />
+                  {item.points ? <Tag label={`+${item.points} puan`} /> : null}
+                </View>
+              </Card>
+            </FadeInItem>
           )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.emptyText}>

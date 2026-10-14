@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Location, WithId } from '@repo/shared';
@@ -11,6 +11,7 @@ import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui/chip';
+import { FadeInItem, PressableScale } from '@/components/ui/motion';
 import { TextField } from '@/components/ui/text-field';
 import { ContentColumn, OnPhoto, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -114,52 +115,54 @@ export default function ExploreScreen() {
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={header}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-                onPress={() => openLocation(item)}
-                accessibilityRole="button"
-                accessibilityLabel={`${item.name}, ${[item.category, item.district].filter(Boolean).join(', ')}`}
-              >
-                <View style={[styles.cover, { backgroundColor: theme.backgroundElement }]}>
-                  {item.coverPhotoUrl ? (
-                    <Image
-                      source={{ uri: photoThumbnail(item.coverPhotoUrl, 800, 600) }}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                      transition={150}
-                      accessibilityIgnoresInvertColors
-                    />
-                  ) : (
-                    <ThemedText style={styles.coverEmoji}>{categoryEmoji(item.category)}</ThemedText>
-                  )}
-                  {item.isSponsored ? (
-                    <View style={styles.badge}>
-                      <ThemedText type="caption" style={styles.badgeText}>
-                        SPONSORLU
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                  {/* Alttan koyulaşan geçiş: ad ve bilgiler fotoğrafın üstünde okunur. */}
-                  <LinearGradient colors={['transparent', OnPhoto.scrim]} style={styles.shade}>
-                    <View style={styles.shadeText}>
-                      <ThemedText type="heading" style={styles.onPhoto} numberOfLines={1}>
-                        {item.name}
-                      </ThemedText>
-                      <ThemedText type="caption" style={styles.onPhotoSoft} numberOfLines={1}>
-                        {[item.category, item.district, item.isFree ? 'Ücretsiz giriş' : null]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </ThemedText>
-                    </View>
-                    {item.rating ? (
-                      <ThemedText type="smallBold" style={styles.rating}>
-                        ★ {item.rating.toFixed(1)}
-                      </ThemedText>
+            renderItem={({ item, index }) => (
+              <FadeInItem index={index}>
+                <PressableScale
+                  style={styles.card}
+                  onPress={() => openLocation(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name}, ${[item.category, item.district].filter(Boolean).join(', ')}`}
+                >
+                  <View style={[styles.cover, { backgroundColor: theme.backgroundElement }]}>
+                    {item.coverPhotoUrl ? (
+                      <Image
+                        source={{ uri: photoThumbnail(item.coverPhotoUrl, 800, 600) }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                        transition={150}
+                        accessibilityIgnoresInvertColors
+                      />
+                    ) : (
+                      <ThemedText style={styles.coverEmoji}>{categoryEmoji(item.category)}</ThemedText>
+                    )}
+                    {item.isSponsored ? (
+                      <View style={styles.badge}>
+                        <ThemedText type="caption" style={styles.badgeText}>
+                          SPONSORLU
+                        </ThemedText>
+                      </View>
                     ) : null}
-                  </LinearGradient>
-                </View>
-              </Pressable>
+                    {/* Alttan koyulaşan geçiş: ad ve bilgiler fotoğrafın üstünde okunur. */}
+                    <LinearGradient colors={['transparent', OnPhoto.scrim]} style={styles.shade}>
+                      <View style={styles.shadeText}>
+                        <ThemedText type="heading" style={styles.onPhoto} numberOfLines={1}>
+                          {item.name}
+                        </ThemedText>
+                        <ThemedText type="caption" style={styles.onPhotoSoft} numberOfLines={1}>
+                          {[item.category, item.district, item.isFree ? 'Ücretsiz giriş' : null]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </ThemedText>
+                      </View>
+                      {item.rating ? (
+                        <ThemedText type="smallBold" style={styles.rating}>
+                          ★ {item.rating.toFixed(1)}
+                        </ThemedText>
+                      ) : null}
+                    </LinearGradient>
+                  </View>
+                </PressableScale>
+              </FadeInItem>
             )}
             ListEmptyComponent={
               !loading ? (
@@ -202,7 +205,6 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: { borderRadius: Radius.large, overflow: 'hidden' },
-  pressed: { opacity: 0.85 },
   cover: { aspectRatio: 4 / 3, alignItems: 'center', justifyContent: 'center' },
   coverEmoji: { fontSize: 40, lineHeight: 48 },
   badge: {
