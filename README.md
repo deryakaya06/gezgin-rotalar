@@ -7,6 +7,7 @@
 | Klasör | İçerik |
 |---|---|
 | `apps/mobile` | Expo / React Native uygulaması (Expo Router) |
+| `apps/web` | Admin paneli (Next.js): mekan ekleme/düzenleme, sponsorlu işaretleme |
 | `packages/shared` | Ortak Firestore tipleri ve sabitler (`@repo/shared`) |
 | `packages/ui`, `packages/eslint-config`, `packages/typescript-config` | Turborepo paketleri |
 | `firestore.rules`, `firestore.indexes.json` | Firestore güvenlik kuralları ve indexler |
@@ -33,6 +34,14 @@ cd firestore-tests && npm install && npm test
 # Kuralları ve indexleri yayınlama
 npx firebase-tools deploy --only firestore
 ```
+
+## Admin paneli
+
+```sh
+npm run admin   # http://localhost:3001
+```
+
+Yalnızca `role: "admin"` olan hesaplar girebilir. Mekan ekleme, düzenleme, silme, sponsorlu işaretleme, kapak fotoğrafı yükleme ve OpenStreetMap'ten konum bulma buradan yapılır.
 
 ## Mekanlar
 
