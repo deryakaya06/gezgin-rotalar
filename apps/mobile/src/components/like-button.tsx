@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { doc, getDoc } from 'firebase/firestore';
 import { COLLECTIONS } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,6 +29,8 @@ export function LikeButton({ checkInId, initialCount }: { checkInId: string; ini
   const [count, setCount] = useState(initialCount);
   const [busy, setBusy] = useState(false);
   const loaded = useRef(false);
+  const scale = useSharedValue(1);
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   useEffect(() => {
     if (!user) return;
@@ -41,6 +51,10 @@ export function LikeButton({ checkInId, initialCount }: { checkInId: string; ini
   function toggle() {
     if (!user || busy || !loaded.current) return;
     const next = !liked;
+    if (next) {
+      // Beğenince kalp kısa bir an büyüyüp yerine oturur.
+      scale.set(withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, { damping: 8 })));
+    }
     setLiked(next);
     setCount((c) => Math.max(0, c + (next ? 1 : -1)));
     setBusy(true);
@@ -60,16 +74,16 @@ export function LikeButton({ checkInId, initialCount }: { checkInId: string; ini
       accessibilityLabel={liked ? 'Beğeniyi geri al' : 'Beğen'}
       onPress={toggle}
       hitSlop={8}
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: liked ? theme.highlightSoft : theme.backgroundElement },
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <ThemedText style={[styles.heart, { color: liked ? theme.highlight : theme.textSecondary }]}>
-        {liked ? '♥' : '♡'}
-      </ThemedText>
-      <ThemedText type="smallBold" style={{ color: liked ? theme.highlight : theme.textSecondary }}>
+      <Animated.View style={heartStyle}>
+        <Ionicons
+          name={liked ? 'heart' : 'heart-outline'}
+          size={22}
+          color={liked ? theme.highlight : theme.textSecondary}
+        />
+      </Animated.View>
+      <ThemedText type="smallBold" themeColor={liked ? undefined : 'textSecondary'}>
         {count}
       </ThemedText>
     </Pressable>
@@ -80,12 +94,9 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: 6,
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
+    paddingVertical: Spacing.one,
   },
-  heart: { fontSize: 16, lineHeight: 20 },
-  pressed: { opacity: 0.7 },
+  pressed: { opacity: 0.6 },
 });
