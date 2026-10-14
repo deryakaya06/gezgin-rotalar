@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Alert, Pressable, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, {
   useAnimatedStyle,
@@ -28,6 +28,7 @@ export function LikeButton({ checkInId, initialCount }: { checkInId: string; ini
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(initialCount);
   const [busy, setBusy] = useState(false);
+  // Beğeni durumu okunana kadar dokunuş beklemeye alınır; okuma başarısız olsa da düğme kilitlenmez.
   const loaded = useRef(false);
   const scale = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
@@ -37,12 +38,14 @@ export function LikeButton({ checkInId, initialCount }: { checkInId: string; ini
     let cancelled = false;
     getDoc(doc(db, COLLECTIONS.checkIns, checkInId, 'likes', user.uid))
       .then((snap) => {
-        if (!cancelled) {
-          setLiked(snap.exists());
-          loaded.current = true;
-        }
+        if (!cancelled) setLiked(snap.exists());
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.log('Beğeni durumu okunamadı:', error.message);
+      })
+      .finally(() => {
+        loaded.current = true;
+      });
     return () => {
       cancelled = true;
     };
@@ -60,9 +63,15 @@ export function LikeButton({ checkInId, initialCount }: { checkInId: string; ini
     setBusy(true);
     (next ? likeCheckIn : unlikeCheckIn)(user.uid, checkInId)
       .catch((error) => {
-        console.log('Beğeni kaydedilemedi:', error.message);
+        console.log('Beğeni kaydedilemedi:', error.code, error.message);
         setLiked(!next);
         setCount((c) => Math.max(0, c + (next ? -1 : 1)));
+        Alert.alert(
+          'Beğeni kaydedilemedi',
+          error.code === 'permission-denied'
+            ? 'Sunucu bu işleme izin vermedi. Güvenlik kuralları güncel olmayabilir.'
+            : error.message
+        );
       })
       .finally(() => setBusy(false));
   }
