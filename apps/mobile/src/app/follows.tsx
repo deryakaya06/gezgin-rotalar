@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
     gap: Spacing.three,
   },
-  tabs: { flexDirection: 'row', gap: Spacing.two },
+  tabs: { flexDirection: 'row', gap: Spacing.four },
   list: { gap: Spacing.two, paddingBottom: Spacing.four },
   empty: { textAlign: 'center', marginTop: Spacing.four },
 });

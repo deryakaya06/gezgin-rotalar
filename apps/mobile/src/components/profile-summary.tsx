@@ -71,7 +71,7 @@ export function ProfileSummary({
             <Avatar photoUrl={profile?.photoUrl} accountType={profile?.accountType} size={88} />
           </View>
         )}
-        <ThemedText type="defaultSemiBold">{profile?.displayName ?? 'Yükleniyor...'}</ThemedText>
+        <ThemedText type="heading">{profile?.displayName ?? 'Yükleniyor...'}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {profile?.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
         </ThemedText>

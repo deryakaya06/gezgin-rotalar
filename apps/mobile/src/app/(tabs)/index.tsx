@@ -22,7 +22,6 @@ import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { LikeButton } from '@/components/like-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TileStripe } from '@/components/tile-stripe';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
 import { Tag } from '@/components/ui/tag';
@@ -182,7 +181,6 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <TileStripe inset={Spacing.four} />
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
@@ -304,7 +302,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.7 },
   headerSubtitle: { letterSpacing: 1 },
-  tabRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
+  tabRow: { flexDirection: 'row', gap: Spacing.four, marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   postCard: { gap: Spacing.two },
   postTopRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

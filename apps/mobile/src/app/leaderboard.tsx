@@ -65,8 +65,8 @@ export default function LeaderboardScreen() {
                 style={[
                   styles.row,
                   isMe
-                    ? { borderColor: theme.primary, backgroundColor: theme.primarySoft, borderWidth: 2 }
-                    : { borderColor: theme.border },
+                    ? { borderColor: theme.highlight, backgroundColor: theme.highlightSoft, borderWidth: 1 }
+                    : { borderColor: theme.border, backgroundColor: theme.surface },
                 ]}
               >
                 <Pressable
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.three,

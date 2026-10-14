@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 import { ProfileSummary } from '@/components/profile-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TileStripe } from '@/components/tile-stripe';
 import { Button } from '@/components/ui/button';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -69,7 +68,6 @@ export default function ProfileScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <TileStripe />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="subtitle">Profil</ThemedText>
 

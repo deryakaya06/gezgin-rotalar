@@ -18,7 +18,7 @@ export function UserRow({ user }: { user: WithId<UserProfile> }) {
 
   // Profili açan alan ile takip butonu kardeş öğeler: web'de düğme içinde düğme olamaz.
   return (
-    <View style={[styles.row, { borderColor: theme.border }]}>
+    <View style={[styles.row, { borderColor: theme.border, backgroundColor: theme.surface }]}>
       <Pressable
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
         onPress={() =>
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     padding: Spacing.three,
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.medium,
   },
   main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },

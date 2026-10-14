@@ -14,7 +14,6 @@ import { CheckInPhoto } from '@/components/check-in-photo';
 import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TileStripe } from '@/components/tile-stripe';
 import { Card } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { ContentColumn, Radius, Spacing } from '@/constants/theme';
@@ -60,7 +59,6 @@ export default function RoutesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <TileStripe inset={Spacing.four} />
         <FlatList
           data={checkIns}
           keyExtractor={(item) => item.id}

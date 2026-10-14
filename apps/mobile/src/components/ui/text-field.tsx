@@ -12,7 +12,7 @@ export function TextField({ style, ...rest }: TextInputProps) {
       selectionColor={theme.primary}
       style={[
         styles.input,
-        { borderColor: theme.border, color: theme.text, backgroundColor: theme.background },
+        { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface },
         style,
       ]}
       {...rest}
@@ -22,7 +22,7 @@ export function TextField({ style, ...rest }: TextInputProps) {
 
 const styles = StyleSheet.create({
   input: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.medium,
     paddingHorizontal: 14,
     paddingVertical: 12,
