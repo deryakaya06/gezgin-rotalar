@@ -4,7 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { COLLECTIONS, type UserProfile } from '@repo/shared';
 
 import { auth, db } from '@/firebase';
-import { migrateLegacyProfile } from '@/services/users';
+import { migrateLegacyProfile, syncSearchName } from '@/services/users';
 
 type AuthState = {
   user: User | null;
@@ -56,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setProfileState({ uid: user.uid, data: data as UserProfile });
+        // Arama alanı olmayan (eski) hesaplar ilk girişte aramaya eklenir.
+        syncSearchName(user.uid, data as UserProfile)?.catch((error) => {
+          console.log('Arama alanı güncellenemedi:', error.message);
+        });
       },
       (error) => {
         console.log('Profil dinlenemedi:', error.message);

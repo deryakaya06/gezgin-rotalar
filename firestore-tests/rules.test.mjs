@@ -9,6 +9,10 @@ import { connectAuthEmulator, createUserWithEmailAndPassword, getAuth } from 'fi
 import {
   collection,
   connectFirestoreEmulator,
+  getDocs,
+  orderBy,
+  query,
+  where,
   deleteField,
   doc,
   getCountFromServer,
@@ -459,5 +463,50 @@ describe('beğeniler', () => {
     const id = await checkInOf(bob);
     await assert.rejects(likeBatch(alice, id, { as: bob.uid }));
     await assert.rejects(updateDoc(doc(alice.db, 'check_ins', id), { points: 999 }));
+  });
+});
+
+describe('kullanıcı arama alanı (searchName)', () => {
+  test('profil arama alanıyla oluşturulur ve sahibi güncelleyebilir', async () => {
+    const eve = await signUp('eve');
+    await setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Ayşe'), searchName: 'ayse' });
+    await updateDoc(doc(eve.db, 'users', eve.uid), { displayName: 'Ayşe & Can', searchName: 'ayse & can' });
+  });
+
+  test('çok uzun arama alanı reddedilir', async () => {
+    const eve = await signUp('eve');
+    await assert.rejects(
+      setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Eve'), searchName: 'x'.repeat(61) })
+    );
+  });
+
+  test('admin başkasının arama alanını doldurabilir, normal kullanıcı dolduramaz', async () => {
+    const target = await newUser('hedef');
+    const bob = await newUser('bob');
+    await assert.rejects(updateDoc(doc(bob.db, 'users', target.uid), { searchName: 'hedef' }));
+
+    const admin = await newUser('admin');
+    await adminSet(`users/${admin.uid}`, {
+      displayName: 'admin', accountType: 'friends', totalPoints: 0, visitCount: 0, role: 'admin',
+    });
+    await updateDoc(doc(admin.db, 'users', target.uid), { searchName: 'hedef' });
+    // Admin bu yolla başka alanı değiştiremez.
+    await assert.rejects(updateDoc(doc(admin.db, 'users', target.uid), { totalPoints: 999 }));
+  });
+});
+
+describe('kullanıcı arama sorgusu', () => {
+  test('"ay" ile başlayan arama alanları bulunur', async () => {
+    const a = await signUp('arama');
+    await setDoc(doc(a.db, 'users', a.uid), { ...newProfile('Aydın & Ece'), searchName: 'aydin & ece' });
+    const b = await signUp('arama2');
+    await setDoc(doc(b.db, 'users', b.uid), { ...newProfile('Zeynep'), searchName: 'zeynep' });
+
+    const snap = await getDocs(
+      query(collection(a.db, 'users'), where('searchName', '>=', 'ay'), where('searchName', '<=', 'ay\uf8ff'), orderBy('searchName'))
+    );
+    const names = snap.docs.map((d) => d.get('searchName'));
+    assert.ok(names.includes('aydin & ece'));
+    assert.ok(!names.includes('zeynep'));
   });
 });

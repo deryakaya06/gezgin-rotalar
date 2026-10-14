@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import type { UserProfile } from '@repo/shared';
 
 import { ThemedText } from '@/components/themed-text';
@@ -27,7 +28,13 @@ export function ProfileSummary({
   /** Kartın altına eklenecek içerik (ör. email veya takip butonu). */
   children?: ReactNode;
 }) {
+  const router = useRouter();
   const followCounts = useFollowCounts(uid, followRefreshKey);
+
+  function openList(type: 'followers' | 'following') {
+    if (!uid) return;
+    router.push({ pathname: '/follows', params: { uid, type, name: profile?.displayName ?? '' } });
+  }
   const checkInCount = profile?.visitCount ?? 0;
   const earnedBadges = BADGES.filter((b) => checkInCount >= b.min);
 
@@ -48,12 +55,26 @@ export function ProfileSummary({
           {profile?.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
         </ThemedText>
         <View style={styles.followRow}>
-          <ThemedText type="small">
-            <ThemedText type="smallBold">{followCounts.followers}</ThemedText> takipçi
-          </ThemedText>
-          <ThemedText type="small">
-            <ThemedText type="smallBold">{followCounts.following}</ThemedText> takip
-          </ThemedText>
+          <Pressable
+            onPress={() => openList('followers')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${followCounts.followers} takipçi, listeyi aç`}
+          >
+            <ThemedText type="small" style={styles.followLink}>
+              <ThemedText type="smallBold">{followCounts.followers}</ThemedText> takipçi
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => openList('following')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${followCounts.following} takip, listeyi aç`}
+          >
+            <ThemedText type="small" style={styles.followLink}>
+              <ThemedText type="smallBold">{followCounts.following}</ThemedText> takip
+            </ThemedText>
+          </Pressable>
         </View>
         {children}
       </Card>
@@ -91,6 +112,7 @@ const styles = StyleSheet.create({
   card: { padding: Spacing.four, alignItems: 'center', gap: Spacing.one },
   avatarEmoji: { fontSize: 40, lineHeight: 48, marginBottom: Spacing.two },
   followRow: { flexDirection: 'row', gap: Spacing.four, marginTop: Spacing.two },
+  followLink: { textDecorationLine: 'underline' },
   statsRow: { flexDirection: 'row', gap: Spacing.three },
   statBox: { flex: 1, alignItems: 'center', borderRadius: Radius.medium },
   statNumber: { fontSize: 22, lineHeight: 30 },

@@ -20,6 +20,8 @@ export type UserProfile = {
   createdAt: FirestoreTimestamp | null;
   /** Son check-in'in id'si; kuralların puan artışını doğrulaması için. */
   lastCheckInId?: string;
+  /** searchKey(displayName); kullanıcı araması için. */
+  searchName?: string;
 };
 
 /** users/{uid}/visits/{locationId} — mekandan en son puan alınan zaman. */

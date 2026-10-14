@@ -78,6 +78,8 @@ function RootNavigator() {
           <Stack.Screen name="leaderboard" />
           <Stack.Screen name="location/[id]" />
           <Stack.Screen name="user/[id]" />
+          <Stack.Screen name="search" />
+          <Stack.Screen name="follows" />
         </Stack.Protected>
 
         <Stack.Protected guard={!user}>

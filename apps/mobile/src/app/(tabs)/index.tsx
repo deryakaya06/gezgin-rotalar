@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
   collection,
@@ -185,10 +186,25 @@ export default function HomeScreen() {
           ListHeaderComponent={
             <>
               <View style={styles.headerRow}>
-                <ThemedText type="subtitle">Gezgin Rotalar</ThemedText>
-                <ThemedText type="caption" themeColor="textSecondary" style={styles.headerSubtitle}>
-                  AKIŞ
-                </ThemedText>
+                <View style={styles.headerText}>
+                  <ThemedText type="subtitle">Gezgin Rotalar</ThemedText>
+                  <ThemedText type="caption" themeColor="textSecondary" style={styles.headerSubtitle}>
+                    AKIŞ
+                  </ThemedText>
+                </View>
+                <Pressable
+                  onPress={() => router.push('/search')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Gezgin ara"
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.searchButton,
+                    { backgroundColor: theme.backgroundElement },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Ionicons name="search" size={20} color={theme.text} />
+                </Pressable>
               </View>
 
               <View style={styles.tabRow}>
@@ -251,7 +267,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
-  headerRow: { marginBottom: Spacing.three },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    marginBottom: Spacing.three,
+  },
+  headerText: { flex: 1 },
+  searchButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.7 },
   headerSubtitle: { letterSpacing: 1 },
   tabRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
