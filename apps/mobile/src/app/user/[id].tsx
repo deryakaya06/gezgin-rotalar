@@ -21,7 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
-import { Spacing } from '@/constants/theme';
+import { ContentColumn, Spacing } from '@/constants/theme';
 import { db } from '@/firebase';
 import { useFollow } from '@/hooks/use-follow';
 import { formatDate } from '@/utils/format';
@@ -119,6 +119,7 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
+    ...ContentColumn,
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

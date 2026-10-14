@@ -16,7 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TileStripe } from '@/components/tile-stripe';
 import { Card } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
-import { Radius, Spacing } from '@/constants/theme';
+import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
@@ -129,6 +129,7 @@ export default function RoutesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
+    ...ContentColumn,
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
