@@ -206,7 +206,7 @@ describe('check_ins', () => {
     await assert.rejects(checkInBatch(bob, { userId: 'baska-biri', points: 0 }));
   });
 
-  test('check-in silinemez', async () => {
+  test('check-in tek başına silinemez; puan geri alınmalı', async () => {
     const bob = await newUser('bob');
     await checkInBatch(bob);
     const { lastCheckInId } = await profileOf(bob);
@@ -527,5 +527,55 @@ describe('profil fotoğrafı', () => {
     const alice = await newUser('alice');
     await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: 'https://kotu-site.com/a.jpg' }));
     await assert.rejects(updateDoc(doc(alice.db, 'users', bob.uid), { photoUrl: photo }));
+  });
+});
+
+describe('check-in silme', () => {
+  /** apps/mobile/src/services/checkins.ts deleteCheckIn ile aynı batch. */
+  function deleteBatch(user, checkInId, points, { pointsDelta = -points, visitDelta = -1 } = {}) {
+    const batch = writeBatch(user.db);
+    batch.delete(doc(user.db, 'check_ins', checkInId));
+    batch.update(doc(user.db, 'users', user.uid), {
+      totalPoints: increment(pointsDelta),
+      visitCount: increment(visitDelta),
+      lastDeletedCheckInId: checkInId,
+    });
+    return batch.commit();
+  }
+
+  test('kendi check-in silinince puan ve ziyaret geri alınır', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await deleteBatch(bob, lastCheckInId, POINTS);
+    const p = await profileOf(bob);
+    assert.equal(p.totalPoints, 0);
+    assert.equal(p.visitCount, 0);
+  });
+
+  test('puan yanlış miktarda düşürülemez', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(deleteBatch(bob, lastCheckInId, POINTS, { pointsDelta: 0 }));
+    await assert.rejects(deleteBatch(bob, lastCheckInId, POINTS, { visitDelta: 0 }));
+  });
+
+  test('başkasının check-in silinemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(deleteBatch(alice, lastCheckInId, POINTS));
+  });
+
+  test('silip 24 saat içinde tekrar yapmak puan getirmez', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await deleteBatch(bob, lastCheckInId, POINTS);
+    await assert.rejects(checkInBatch(bob), 'puanli tekrar reddedilmeli');
+    await checkInBatch(bob, { points: 0 });
+    assert.equal((await profileOf(bob)).totalPoints, 0);
   });
 });

@@ -50,3 +50,19 @@ export async function createCheckIn(
   await batch.commit();
   return points;
 }
+
+/**
+ * Kendi check-in'ini siler; aynı batch'te kazanılan puan ve ziyaret geri alınır.
+ * firestore.rules miktarların doğruluğunu denetler. visits kaydı silinmez; böylece
+ * silip tekrar check-in yapmak 24 saat içinde yeniden puan getirmez.
+ */
+export function deleteCheckIn(uid: string, checkIn: { id: string; points?: number }) {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, COLLECTIONS.checkIns, checkIn.id));
+  batch.update(doc(db, COLLECTIONS.users, uid), {
+    totalPoints: increment(-(checkIn.points ?? 0)),
+    visitCount: increment(-1),
+    lastDeletedCheckInId: checkIn.id,
+  });
+  return batch.commit();
+}

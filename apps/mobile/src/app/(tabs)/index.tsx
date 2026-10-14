@@ -18,6 +18,7 @@ import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
 import { Avatar } from '@/components/avatar';
 import { CheckInPhoto } from '@/components/check-in-photo';
+import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { LikeButton } from '@/components/like-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -230,16 +231,22 @@ export default function HomeScreen() {
           }
           renderItem={({ item }) => (
             <Card style={styles.postCard}>
-              <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
-                <Avatar photoUrl={item.authorPhotoUrl} accountType={item.accountType} size={36} />
-                <View style={styles.postHeaderText}>
-                  <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
-                  <ThemedText type="caption" themeColor="textSecondary">
-                    {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
-                    {formatDate(item.createdAt)}
-                  </ThemedText>
-                </View>
-              </Pressable>
+              <View style={styles.postTopRow}>
+                <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
+                  <Avatar photoUrl={item.authorPhotoUrl} accountType={item.accountType} size={36} />
+                  <View style={styles.postHeaderText}>
+                    <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
+                    <ThemedText type="caption" themeColor="textSecondary">
+                      {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
+                      {formatDate(item.createdAt)}
+                    </ThemedText>
+                  </View>
+                </Pressable>
+                <DeleteCheckInButton
+                  checkIn={item}
+                  onDeleted={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
+                />
+              </View>
 
               <Tag label={item.locationName} tone="accent" />
 
@@ -300,7 +307,8 @@ const styles = StyleSheet.create({
   tabRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   postCard: { gap: Spacing.two },
-  postHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  postTopRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  postHeaderRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   postHeaderText: { flex: 1 },
   postFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
