@@ -116,8 +116,8 @@ export const Radius = {
   pill: 999,
 } as const;
 
-/** Başlıklar için klasik serif (Pera Palas yönü); yüklenmesi app/_layout.tsx'te. */
-export const DisplayFamily = 'CormorantGaramond_600SemiBold';
+/** Başlıklar için yüksek kontrastlı serif (Pera Palas yönü); yüklenmesi app/_layout.tsx'te. */
+export const DisplayFamily = 'PlayfairDisplay_600SemiBold';
 
 /** Manrope ağırlıkları; yüklenmeleri app/_layout.tsx'te. */
 export const ManropeFamily = {

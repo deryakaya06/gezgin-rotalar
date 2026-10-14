@@ -64,7 +64,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   );
 }
 
-/** Başlık türleri klasik serif (Cormorant Garamond), geri kalanı Manrope. */
+/** Başlık türleri serif (Playfair Display), geri kalanı Manrope. */
 const DISPLAY_TYPES = new Set<string>(['title', 'subtitle', 'heading']);
 
 function typeStyles(type: NonNullable<ThemedTextProps['type']>) {
@@ -98,19 +98,19 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
   title: {
-    fontSize: 44,
-    lineHeight: 48,
+    fontSize: 38,
+    lineHeight: 44,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 30,
+    lineHeight: 36,
     letterSpacing: -0.3,
   },
   /** Mekan ve kişi adları gibi kart başlıkları. */
   heading: {
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 19,
+    lineHeight: 24,
     letterSpacing: -0.2,
   },
   link: {
