@@ -59,39 +59,43 @@ export default function LeaderboardScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => {
             const isMe = item.id === currentUserId;
+            // Profili açan alan ile takip butonu kardeş öğeler: web'de düğme içinde düğme olamaz.
             return (
-              <Pressable
-                style={({ pressed }) => [
+              <View
+                style={[
                   styles.row,
                   isMe
                     ? { borderColor: theme.primary, backgroundColor: theme.primarySoft, borderWidth: 2 }
                     : { borderColor: theme.border },
-                  pressed && styles.pressed,
                 ]}
-                onPress={() =>
-                  isMe
-                    ? router.navigate('/(tabs)/profile')
-                    : router.push({ pathname: '/user/[id]', params: { id: item.id } })
-                }
               >
-                <ThemedText type="defaultSemiBold" style={styles.rank}>
-                  #{index + 1}
-                </ThemedText>
-                <View style={styles.rowContent}>
-                  <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                    {item.displayName} {isMe ? '(Sen)' : ''}
+                <Pressable
+                  style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+                  onPress={() =>
+                    isMe
+                      ? router.navigate('/(tabs)/profile')
+                      : router.push({ pathname: '/user/[id]', params: { id: item.id } })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`${index + 1}. sıra, ${item.displayName}, ${item.totalPoints} puan`}
+                >
+                  <ThemedText type="defaultSemiBold" style={styles.rank}>
+                    #{index + 1}
                   </ThemedText>
-                  <ThemedText type="caption" themeColor="textSecondary">
-                    {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
-                  </ThemedText>
-                </View>
-                <View style={styles.rowEnd}>
+                  <View style={styles.rowContent}>
+                    <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                      {item.displayName} {isMe ? '(Sen)' : ''}
+                    </ThemedText>
+                    <ThemedText type="caption" themeColor="textSecondary">
+                      {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
+                    </ThemedText>
+                  </View>
                   <ThemedText type="smallBold" style={{ color: theme.primary }}>
                     {item.totalPoints} puan
                   </ThemedText>
-                  <FollowButton userId={item.id} />
-                </View>
-              </Pressable>
+                </Pressable>
+                <FollowButton userId={item.id} />
+              </View>
             );
           }}
           ListEmptyComponent={
@@ -127,6 +131,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   rank: { width: 36 },
   rowContent: { flex: 1 },
-  rowEnd: { alignItems: 'flex-end', gap: Spacing.one },
+  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });
