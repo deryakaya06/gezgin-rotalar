@@ -73,6 +73,8 @@ export type CheckIn = {
   points: number;
   /** Cloudinary'deki fotoğrafın adresi (https://res.cloudinary.com/...). */
   photoUrl?: string;
+  /** Beğeni sayısı; check_ins/{id}/likes alt koleksiyonuyla aynı batch'te güncellenir. */
+  likeCount?: number;
   createdAt: FirestoreTimestamp | null;
 };
 

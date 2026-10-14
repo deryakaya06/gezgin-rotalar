@@ -406,3 +406,58 @@ describe('check-in fotoğrafı', () => {
     );
   });
 });
+
+describe('beğeniler', () => {
+  /** apps/mobile/src/services/likes.ts ile aynı batch; overrides ile hile denenir. */
+  function likeBatch(user, checkInId, { remove = false, delta = remove ? -1 : 1, writeLike = true, writeCount = true, as } = {}) {
+    const batch = writeBatch(user.db);
+    const likeRef = doc(user.db, 'check_ins', checkInId, 'likes', as ?? user.uid);
+    if (writeLike) remove ? batch.delete(likeRef) : batch.set(likeRef, { createdAt: serverTimestamp() });
+    if (writeCount) batch.update(doc(user.db, 'check_ins', checkInId), { likeCount: increment(delta) });
+    return batch.commit();
+  }
+
+  async function checkInOf(user) {
+    await checkInBatch(user);
+    return (await profileOf(user)).lastCheckInId;
+  }
+
+  test('beğen ve geri al sayacı birlikte günceller', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+
+    await likeBatch(alice, id);
+    assert.equal((await getDoc(doc(alice.db, 'check_ins', id))).data().likeCount, 1);
+    await likeBatch(bob, id);
+    assert.equal((await getDoc(doc(alice.db, 'check_ins', id))).data().likeCount, 2);
+
+    await likeBatch(alice, id, { remove: true });
+    assert.equal((await getDoc(doc(alice.db, 'check_ins', id))).data().likeCount, 1);
+  });
+
+  test('aynı check-in iki kez beğenilemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+    await likeBatch(alice, id);
+    await assert.rejects(likeBatch(alice, id));
+  });
+
+  test('sayaç beğenisiz değiştirilemez, birden fazla artırılamaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+    await assert.rejects(likeBatch(alice, id, { writeLike: false }));
+    await assert.rejects(likeBatch(alice, id, { delta: 100 }));
+    await assert.rejects(likeBatch(alice, id, { writeCount: false }));
+  });
+
+  test('başkası adına beğeni eklenemez, check-in başka alanı değiştirilemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+    await assert.rejects(likeBatch(alice, id, { as: bob.uid }));
+    await assert.rejects(updateDoc(doc(alice.db, 'check_ins', id), { points: 999 }));
+  });
+});
