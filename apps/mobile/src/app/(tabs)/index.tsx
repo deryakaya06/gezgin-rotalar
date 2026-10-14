@@ -104,19 +104,27 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { user } = useAuth();
-  // Takip listesi yalnızca "Takip Edilenler" sekmesinin sorgusunu etkiler.
-  const followingKey = mode === 'takip' ? followingIds?.join(',') : 'kesfet';
+  const [error, setError] = useState('');
+  // Takip listesi yalnızca "Takip Edilenler" sekmesinin sorgusunu etkiler. Liste henüz
+  // gelmediyse (null) anahtar ayrıdır; geldiğinde değişir ve yükleme yeniden çalışır.
+  const followingKey =
+    mode === 'takip' ? (followingIds === null ? '__bekleniyor__' : followingIds.join(',')) : 'kesfet';
 
   const load = useCallback(
     (signal: { cancelled: boolean }, pull = false) => {
-      if (!user || followingIds === null) return;
+      if (!user) return;
+      // Keşfet takip listesine ihtiyaç duymaz; Takip Edilenler liste gelene kadar bekler.
+      if (mode === 'takip' && followingIds === null) return;
       if (pull) setRefreshing(true);
-      fetchFeed(mode, followingIds)
+      fetchFeed(mode, followingIds ?? [])
         .then((next) => {
-          if (!signal.cancelled) setItems(next);
+          if (signal.cancelled) return;
+          setItems(next);
+          setError('');
         })
-        .catch((error) => {
-          console.log('Akış yüklenemedi:', error.message);
+        .catch((e: Error) => {
+          console.log('Akış yüklenemedi:', e.message);
+          if (!signal.cancelled) setError(e.message);
         })
         .finally(() => {
           if (signal.cancelled) return;
@@ -247,7 +255,9 @@ export default function HomeScreen() {
           )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-              {loading
+              {error
+                ? `Akış yüklenemedi: ${error}\nAşağı çekerek tekrar deneyebilirsin.`
+                : loading
                 ? 'Yükleniyor...'
                 : mode === 'takip'
                   ? followingIds?.length

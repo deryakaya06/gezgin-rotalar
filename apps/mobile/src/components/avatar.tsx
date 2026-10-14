@@ -1,12 +1,15 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useColorScheme, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import type { AccountType } from '@repo/shared';
 
-import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { photoThumbnail } from '@/services/photos';
 
-/** Profil fotoğrafı; yoksa hesap türüne göre 💑 / 👥 gösterir. */
+/**
+ * Profil fotoğrafı; yoksa Instagram'daki gibi gri daire içinde sade bir siluet.
+ * accountType şimdilik yalnızca erişilebilirlik etiketinde kullanılır.
+ */
 export function Avatar({
   photoUrl,
   accountType,
@@ -17,7 +20,9 @@ export function Avatar({
   size: number;
 }) {
   const theme = useTheme();
+  const scheme = useColorScheme();
   const shape = { width: size, height: size, borderRadius: size / 2 };
+  const label = accountType === 'couple' ? 'Çift hesabı' : 'Arkadaş grubu';
 
   if (photoUrl) {
     return (
@@ -27,20 +32,27 @@ export function Avatar({
         style={[shape, { backgroundColor: theme.backgroundElement }]}
         contentFit="cover"
         transition={150}
-        accessibilityLabel="Profil fotoğrafı"
+        accessibilityLabel={`${label} profil fotoğrafı`}
       />
     );
   }
 
   return (
-    <View style={[styles.fallback, shape, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText style={{ fontSize: size * 0.48, lineHeight: size * 0.62 }}>
-        {accountType === 'couple' ? '💑' : '👥'}
-      </ThemedText>
+    <View
+      style={[styles.fallback, shape, { backgroundColor: theme.backgroundSelected }]}
+      accessibilityLabel={`${label}, profil fotoğrafı yok`}
+    >
+      {/* Siluet biraz aşağıda durur; omuzlar dairenin kenarında kesilir. */}
+      <Ionicons
+        name="person"
+        size={size * 0.8}
+        color={scheme === 'dark' ? theme.placeholder : theme.background}
+        style={{ marginTop: size * 0.28 }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fallback: { alignItems: 'center', justifyContent: 'center' },
+  fallback: { alignItems: 'center', overflow: 'hidden' },
 });
