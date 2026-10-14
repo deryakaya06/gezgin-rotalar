@@ -510,3 +510,22 @@ describe('kullanıcı arama sorgusu', () => {
     assert.ok(!names.includes('zeynep'));
   });
 });
+
+describe('profil fotoğrafı', () => {
+  const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+  const photo = `https://res.cloudinary.com/${cloudName}/image/upload/v1/avatar.jpg`;
+
+  test('sahibi kendi Cloudinary fotoğrafını ekleyip kaldırabilir', async () => {
+    const bob = await newUser('bob');
+    await updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: photo });
+    await updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: deleteField() });
+  });
+
+  test('başka siteden fotoğraf ve başkasının fotoğrafını değiştirmek reddedilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: 'https://kotu-site.com/a.jpg' }));
+    await assert.rejects(updateDoc(doc(alice.db, 'users', bob.uid), { photoUrl: photo }));
+  });
+});

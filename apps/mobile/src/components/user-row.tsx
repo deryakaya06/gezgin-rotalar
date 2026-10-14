@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { UserProfile, WithId } from '@repo/shared';
 
+import { Avatar } from '@/components/avatar';
 import { FollowButton } from '@/components/follow-button';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -28,9 +29,7 @@ export function UserRow({ user }: { user: WithId<UserProfile> }) {
         accessibilityRole="button"
         accessibilityLabel={`${user.displayName} profilini aç`}
       >
-        <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
-          <ThemedText style={styles.avatarEmoji}>{user.accountType === 'couple' ? '💑' : '👥'}</ThemedText>
-        </View>
+        <Avatar photoUrl={user.photoUrl} accountType={user.accountType} size={40} />
         <View style={styles.text}>
           <ThemedText type="defaultSemiBold" numberOfLines={1}>
             {user.displayName} {isMe ? '(Sen)' : ''}
@@ -56,7 +55,5 @@ const styles = StyleSheet.create({
   },
   main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   pressed: { opacity: 0.7 },
-  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  avatarEmoji: { fontSize: 20, lineHeight: 26 },
   text: { flex: 1, gap: 2 },
 });
