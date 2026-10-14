@@ -11,6 +11,7 @@ import {
 import { COLLECTIONS, type CheckIn, type WithId } from '@repo/shared';
 
 import { CheckInPhoto } from '@/components/check-in-photo';
+import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TileStripe } from '@/components/tile-stripe';
@@ -104,7 +105,13 @@ export default function RoutesScreen() {
                 </View>
               )}
               <View style={styles.cardContent}>
-                <ThemedText type="defaultSemiBold">{item.locationName}</ThemedText>
+                <View style={styles.cardTitleRow}>
+                  <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+                    {item.locationName}
+                  </ThemedText>
+                  {/* Liste onSnapshot ile dinlendiği için silinen check-in kendiliğinden kaybolur. */}
+                  <DeleteCheckInButton checkIn={item} />
+                </View>
                 <ThemedText type="caption" themeColor="textSecondary">
                   {formatDate(item.createdAt)}
                 </ThemedText>
@@ -148,5 +155,7 @@ const styles = StyleSheet.create({
   cardEmoji: { fontSize: 28, lineHeight: 34 },
   cardPhoto: { width: 96, aspectRatio: undefined, height: '100%', minHeight: 96, borderRadius: 0 },
   cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  cardTitle: { flex: 1 },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

@@ -122,6 +122,20 @@ service cloud.firestore {
         && after.visitCount == resource.data.visitCount + 1;
     }
 
+    // Bu batch'te silinen kendi check-in'inin puanı ve ziyareti geri alınır.
+    function isCheckInDeletionUpdate(uid) {
+      let after = request.resource.data;
+      let id = after.lastDeletedCheckInId;
+      let checkIn = get(checkInPath(id)).data;
+      return after.diff(resource.data).affectedKeys().hasOnly(['totalPoints', 'visitCount', 'lastDeletedCheckInId'])
+        && id is string
+        && exists(checkInPath(id))
+        && !existsAfter(checkInPath(id))
+        && checkIn.userId == uid
+        && after.totalPoints == resource.data.totalPoints - checkIn.get('points', 0)
+        && after.visitCount == resource.data.visitCount - 1;
+    }
+
     // Eski şemadaki (points, email) profili bir kereye mahsus yeni şemaya taşıma.
     // Eski sürümde her check-in 10 puan verdiği için ziyaret sayısı puandan çıkarılır.
     function isLegacyMigration() {
@@ -152,6 +166,7 @@ service cloud.firestore {
           && validProfileFields(request.resource.data)
         )
         || isCheckInCounterUpdate(uid)
+        || isCheckInDeletionUpdate(uid)
         || isLegacyMigration()
       )
       // Admin, arama alanı eksik eski hesapları doldurabilir (scripts/backfill-search-names.mjs).
@@ -253,8 +268,11 @@ service cloud.firestore {
           )
         );
 
-      // Silme puanı geri almayı gerektirir; moderasyon admin panelinden yapılacak.
-      allow delete: if false;
+      // Sahibi silebilir; aynı batch'te puanı ve ziyaret sayısı geri alınmalıdır
+      // (users kuralındaki isCheckInDeletionUpdate).
+      allow delete: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.get('lastDeletedCheckInId', '') == checkInId;
 
       // check_ins/{id}/likes/{uid}: kullanıcı yalnızca kendi beğenisini ekler/siler;
       // sayaç aynı batch'te güncellenmelidir.
