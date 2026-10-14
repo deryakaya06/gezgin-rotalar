@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
+import { Avatar } from '@/components/avatar';
 import { CheckInPhoto } from '@/components/check-in-photo';
 import { LikeButton } from '@/components/like-button';
 import { ThemedText } from '@/components/themed-text';
@@ -34,6 +35,7 @@ type FeedItem = CheckIn & {
   id: string;
   displayName: string;
   accountType: UserProfile['accountType'];
+  authorPhotoUrl?: string;
 };
 
 const FEED_SIZE = 30;
@@ -88,6 +90,7 @@ async function fetchFeed(mode: FeedMode, followingIds: string[]): Promise<FeedIt
     ...item,
     displayName: userMap[item.userId]?.displayName ?? 'Bir Gezgin',
     accountType: userMap[item.userId]?.accountType ?? 'friends',
+    authorPhotoUrl: userMap[item.userId]?.photoUrl,
   }));
 }
 
@@ -220,7 +223,7 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <Card style={styles.postCard}>
               <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
-                <View style={[styles.postAvatar, { backgroundColor: theme.highlight }]} />
+                <Avatar photoUrl={item.authorPhotoUrl} accountType={item.accountType} size={36} />
                 <View style={styles.postHeaderText}>
                   <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
                   <ThemedText type="caption" themeColor="textSecondary">
@@ -288,7 +291,6 @@ const styles = StyleSheet.create({
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   postCard: { gap: Spacing.two },
   postHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  postAvatar: { width: 36, height: 36, borderRadius: 18 },
   postHeaderText: { flex: 1 },
   postFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },

@@ -113,3 +113,10 @@ export async function fetchFollowList(
     .filter((p) => p.exists())
     .map((p) => ({ id: p.id, ...(p.data() as UserProfile) }));
 }
+
+/** Profil fotoğrafını ayarlar; null verilirse kaldırır (hesap türü emojisine döner). */
+export function setProfilePhoto(uid: string, photoUrl: string | null) {
+  return updateDoc(doc(db, COLLECTIONS.users, uid), {
+    photoUrl: photoUrl ?? deleteField(),
+  });
+}

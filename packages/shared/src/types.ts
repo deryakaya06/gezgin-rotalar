@@ -22,6 +22,8 @@ export type UserProfile = {
   lastCheckInId?: string;
   /** searchKey(displayName); kullanıcı araması için. */
   searchName?: string;
+  /** Cloudinary'deki profil fotoğrafı; yoksa hesap türü emojisi gösterilir. */
+  photoUrl?: string;
 };
 
 /** users/{uid}/visits/{locationId} — mekandan en son puan alınan zaman. */
