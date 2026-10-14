@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TileStripe } from '@/components/tile-stripe';
 import { Button } from '@/components/ui/button';
-import { Spacing } from '@/constants/theme';
+import { ContentColumn, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { auth } from '@/firebase';
 
@@ -44,7 +44,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
+  safeArea: { ...ContentColumn, flex: 1 },
   content: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

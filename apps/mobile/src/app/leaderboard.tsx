@@ -9,7 +9,7 @@ import { FollowButton } from '@/components/follow-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
-import { Radius, Spacing } from '@/constants/theme';
+import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
@@ -108,6 +108,7 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
+    ...ContentColumn,
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

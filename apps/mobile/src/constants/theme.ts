@@ -93,7 +93,17 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const MaxContentWidth = 600;
+
+/**
+ * Ekran içeriğini en fazla MaxContentWidth genişlikte ortalar. Telefonda etkisizdir;
+ * web ve tablette fotoğrafların ve kartların pencere boyunca devleşmesini önler.
+ */
+export const ContentColumn = {
+  width: '100%',
+  maxWidth: MaxContentWidth,
+  alignSelf: 'center',
+} as const;
 
 export const Radius = {
   small: 6,

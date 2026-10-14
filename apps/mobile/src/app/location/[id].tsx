@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
-import { Radius, Spacing } from '@/constants/theme';
+import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
@@ -225,7 +225,7 @@ export default function LocationDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
+  safeArea: { ...ContentColumn, flex: 1 },
   content: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

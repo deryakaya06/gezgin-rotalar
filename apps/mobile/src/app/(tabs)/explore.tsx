@@ -13,7 +13,7 @@ import { TileStripe } from '@/components/tile-stripe';
 import { Chip } from '@/components/ui/chip';
 import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
-import { OnPhoto, Radius, Spacing } from '@/constants/theme';
+import { ContentColumn, OnPhoto, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { photoThumbnail } from '@/services/photos';
 import {
@@ -205,7 +205,7 @@ function categoryEmoji(category?: string) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four },
+  safeArea: { ...ContentColumn, flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four },
   header: { gap: Spacing.three, marginBottom: Spacing.three },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   viewToggle: { flexDirection: 'row', gap: Spacing.one },
