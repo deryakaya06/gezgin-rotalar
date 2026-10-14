@@ -10,7 +10,9 @@ export function BackButton() {
       accessibilityRole="button"
       accessibilityLabel="Geri"
       hitSlop={12}
-      onPress={() => router.back()}
+      // Sayfa doğrudan açıldıysa (web'de adres çubuğundan/yenileyerek) geri gidilecek
+      // ekran yoktur; o zaman ana sekmelere dönülür.
+      onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
       style={{ alignSelf: 'flex-start' }}
     >
       <ThemedText type="linkPrimary">{'‹ Geri'}</ThemedText>
