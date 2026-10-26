@@ -1,10 +1,9 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Seçilebilir hap şeklinde düğme (filtreler, sekmeler). */
+/** Seçilebilir sekme/filtre: seçili olan koyu yazı ve pirinç renginde alt çizgiyle belirtilir. */
 export function Chip({
   label,
   selected,
@@ -21,16 +20,12 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[
-        styles.chip,
-        selected
-          ? { backgroundColor: theme.primary, borderColor: theme.primary }
-          : { borderColor: theme.border },
-      ]}
+      hitSlop={6}
+      style={[styles.chip, { borderBottomColor: selected ? theme.highlight : 'transparent' }]}
     >
       <ThemedText
         type={selected ? 'smallBold' : 'small'}
-        style={{ color: selected ? theme.onPrimary : theme.text }}
+        themeColor={selected ? 'text' : 'textSecondary'}
       >
         {label}
       </ThemedText>
@@ -40,9 +35,7 @@ export function Chip({
 
 const styles = StyleSheet.create({
   chip: {
-    borderWidth: 1,
-    borderRadius: Radius.pill,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    borderBottomWidth: 2,
   },
 });

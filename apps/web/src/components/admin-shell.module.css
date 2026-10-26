@@ -1,0 +1,21 @@
+.bar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.barInner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.brand { font-weight: 600; text-decoration: none; }
+.user { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+.center { max-width: 520px; text-align: left; }

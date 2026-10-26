@@ -9,6 +9,10 @@ import { connectAuthEmulator, createUserWithEmailAndPassword, getAuth } from 'fi
 import {
   collection,
   connectFirestoreEmulator,
+  getDocs,
+  orderBy,
+  query,
+  where,
   deleteField,
   doc,
   getCountFromServer,
@@ -202,7 +206,7 @@ describe('check_ins', () => {
     await assert.rejects(checkInBatch(bob, { userId: 'baska-biri', points: 0 }));
   });
 
-  test('check-in silinemez', async () => {
+  test('check-in tek başına silinemez; puan geri alınmalı', async () => {
     const bob = await newUser('bob');
     await checkInBatch(bob);
     const { lastCheckInId } = await profileOf(bob);
@@ -404,5 +408,174 @@ describe('check-in fotoğrafı', () => {
         writeVisit: false,
       })
     );
+  });
+});
+
+describe('beğeniler', () => {
+  /** apps/mobile/src/services/likes.ts ile aynı batch; overrides ile hile denenir. */
+  function likeBatch(user, checkInId, { remove = false, delta = remove ? -1 : 1, writeLike = true, writeCount = true, as } = {}) {
+    const batch = writeBatch(user.db);
+    const likeRef = doc(user.db, 'check_ins', checkInId, 'likes', as ?? user.uid);
+    if (writeLike) remove ? batch.delete(likeRef) : batch.set(likeRef, { createdAt: serverTimestamp() });
+    if (writeCount) batch.update(doc(user.db, 'check_ins', checkInId), { likeCount: increment(delta) });
+    return batch.commit();
+  }
+
+  async function checkInOf(user) {
+    await checkInBatch(user);
+    return (await profileOf(user)).lastCheckInId;
+  }
+
+  test('beğen ve geri al sayacı birlikte günceller', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+
+    await likeBatch(alice, id);
+    assert.equal((await getDoc(doc(alice.db, 'check_ins', id))).data().likeCount, 1);
+    await likeBatch(bob, id);
+    assert.equal((await getDoc(doc(alice.db, 'check_ins', id))).data().likeCount, 2);
+
+    await likeBatch(alice, id, { remove: true });
+    assert.equal((await getDoc(doc(alice.db, 'check_ins', id))).data().likeCount, 1);
+  });
+
+  test('aynı check-in iki kez beğenilemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+    await likeBatch(alice, id);
+    await assert.rejects(likeBatch(alice, id));
+  });
+
+  test('sayaç beğenisiz değiştirilemez, birden fazla artırılamaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+    await assert.rejects(likeBatch(alice, id, { writeLike: false }));
+    await assert.rejects(likeBatch(alice, id, { delta: 100 }));
+    await assert.rejects(likeBatch(alice, id, { writeCount: false }));
+  });
+
+  test('başkası adına beğeni eklenemez, check-in başka alanı değiştirilemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await checkInOf(bob);
+    await assert.rejects(likeBatch(alice, id, { as: bob.uid }));
+    await assert.rejects(updateDoc(doc(alice.db, 'check_ins', id), { points: 999 }));
+  });
+});
+
+describe('kullanıcı arama alanı (searchName)', () => {
+  test('profil arama alanıyla oluşturulur ve sahibi güncelleyebilir', async () => {
+    const eve = await signUp('eve');
+    await setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Ayşe'), searchName: 'ayse' });
+    await updateDoc(doc(eve.db, 'users', eve.uid), { displayName: 'Ayşe & Can', searchName: 'ayse & can' });
+  });
+
+  test('çok uzun arama alanı reddedilir', async () => {
+    const eve = await signUp('eve');
+    await assert.rejects(
+      setDoc(doc(eve.db, 'users', eve.uid), { ...newProfile('Eve'), searchName: 'x'.repeat(61) })
+    );
+  });
+
+  test('admin başkasının arama alanını doldurabilir, normal kullanıcı dolduramaz', async () => {
+    const target = await newUser('hedef');
+    const bob = await newUser('bob');
+    await assert.rejects(updateDoc(doc(bob.db, 'users', target.uid), { searchName: 'hedef' }));
+
+    const admin = await newUser('admin');
+    await adminSet(`users/${admin.uid}`, {
+      displayName: 'admin', accountType: 'friends', totalPoints: 0, visitCount: 0, role: 'admin',
+    });
+    await updateDoc(doc(admin.db, 'users', target.uid), { searchName: 'hedef' });
+    // Admin bu yolla başka alanı değiştiremez.
+    await assert.rejects(updateDoc(doc(admin.db, 'users', target.uid), { totalPoints: 999 }));
+  });
+});
+
+describe('kullanıcı arama sorgusu', () => {
+  test('"ay" ile başlayan arama alanları bulunur', async () => {
+    const a = await signUp('arama');
+    await setDoc(doc(a.db, 'users', a.uid), { ...newProfile('Aydın & Ece'), searchName: 'aydin & ece' });
+    const b = await signUp('arama2');
+    await setDoc(doc(b.db, 'users', b.uid), { ...newProfile('Zeynep'), searchName: 'zeynep' });
+
+    const snap = await getDocs(
+      query(collection(a.db, 'users'), where('searchName', '>=', 'ay'), where('searchName', '<=', 'ay\uf8ff'), orderBy('searchName'))
+    );
+    const names = snap.docs.map((d) => d.get('searchName'));
+    assert.ok(names.includes('aydin & ece'));
+    assert.ok(!names.includes('zeynep'));
+  });
+});
+
+describe('profil fotoğrafı', () => {
+  const rulesText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  const cloudName = rulesText.match(/function cloudinaryCloudName\(\) \{\s*return '([^']+)'/)[1];
+  const photo = `https://res.cloudinary.com/${cloudName}/image/upload/v1/avatar.jpg`;
+
+  test('sahibi kendi Cloudinary fotoğrafını ekleyip kaldırabilir', async () => {
+    const bob = await newUser('bob');
+    await updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: photo });
+    await updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: deleteField() });
+  });
+
+  test('başka siteden fotoğraf ve başkasının fotoğrafını değiştirmek reddedilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await assert.rejects(updateDoc(doc(bob.db, 'users', bob.uid), { photoUrl: 'https://kotu-site.com/a.jpg' }));
+    await assert.rejects(updateDoc(doc(alice.db, 'users', bob.uid), { photoUrl: photo }));
+  });
+});
+
+describe('check-in silme', () => {
+  /** apps/mobile/src/services/checkins.ts deleteCheckIn ile aynı batch. */
+  function deleteBatch(user, checkInId, points, { pointsDelta = -points, visitDelta = -1 } = {}) {
+    const batch = writeBatch(user.db);
+    batch.delete(doc(user.db, 'check_ins', checkInId));
+    batch.update(doc(user.db, 'users', user.uid), {
+      totalPoints: increment(pointsDelta),
+      visitCount: increment(visitDelta),
+      lastDeletedCheckInId: checkInId,
+    });
+    return batch.commit();
+  }
+
+  test('kendi check-in silinince puan ve ziyaret geri alınır', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await deleteBatch(bob, lastCheckInId, POINTS);
+    const p = await profileOf(bob);
+    assert.equal(p.totalPoints, 0);
+    assert.equal(p.visitCount, 0);
+  });
+
+  test('puan yanlış miktarda düşürülemez', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(deleteBatch(bob, lastCheckInId, POINTS, { pointsDelta: 0 }));
+    await assert.rejects(deleteBatch(bob, lastCheckInId, POINTS, { visitDelta: 0 }));
+  });
+
+  test('başkasının check-in silinemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(deleteBatch(alice, lastCheckInId, POINTS));
+  });
+
+  test('silip 24 saat içinde tekrar yapmak puan getirmez', async () => {
+    const bob = await newUser('bob');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await deleteBatch(bob, lastCheckInId, POINTS);
+    await assert.rejects(checkInBatch(bob), 'puanli tekrar reddedilmeli');
+    await checkInBatch(bob, { points: 0 });
+    assert.equal((await profileOf(bob)).totalPoints, 0);
   });
 });

@@ -4,6 +4,7 @@ import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
 import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
 import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
 import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
+import { PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display/600SemiBold';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -58,6 +59,7 @@ function RootNavigator() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    PlayfairDisplay_600SemiBold,
   });
   // Yazı tipi yüklenemezse sistem yazısıyla devam edilir.
   const ready = !initializing && (fontsLoaded || !!fontError);
@@ -78,6 +80,8 @@ function RootNavigator() {
           <Stack.Screen name="leaderboard" />
           <Stack.Screen name="location/[id]" />
           <Stack.Screen name="user/[id]" />
+          <Stack.Screen name="search" />
+          <Stack.Screen name="follows" />
         </Stack.Protected>
 
         <Stack.Protected guard={!user}>

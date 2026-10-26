@@ -9,7 +9,9 @@
     "check-types": "turbo run check-types",
     "seed:locations": "node scripts/seed-locations.mjs",
     "covers:fetch": "node scripts/fetch-cover-photos.mjs",
-    "locations:audit": "node scripts/audit-locations.mjs"
+    "locations:audit": "node scripts/audit-locations.mjs",
+    "admin": "npm run dev -w web",
+    "users:backfill-search": "node scripts/backfill-search-names.mjs"
   },
   "devDependencies": {
     "prettier": "3.9.6",

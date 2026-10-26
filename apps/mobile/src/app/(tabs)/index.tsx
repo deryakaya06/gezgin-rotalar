@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   collection,
   doc,
@@ -11,17 +12,21 @@ import {
   onSnapshot,
   orderBy,
   query,
+  where,
 } from 'firebase/firestore';
 import { COLLECTIONS, type CheckIn, type UserProfile } from '@repo/shared';
 
+import { Avatar } from '@/components/avatar';
 import { CheckInPhoto } from '@/components/check-in-photo';
+import { DeleteCheckInButton } from '@/components/delete-check-in-button';
+import { LikeButton } from '@/components/like-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TileStripe } from '@/components/tile-stripe';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
+import { FadeInItem } from '@/components/ui/motion';
 import { Tag } from '@/components/ui/tag';
-import { Spacing } from '@/constants/theme';
+import { ContentColumn, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
@@ -31,14 +36,44 @@ type FeedItem = CheckIn & {
   id: string;
   displayName: string;
   accountType: UserProfile['accountType'];
+  authorPhotoUrl?: string;
 };
 
-/** Son 30 check-in'i ve paylaşanların görünen adlarını getirir. */
-async function fetchFeed(): Promise<FeedItem[]> {
-  const snapshot = await getDocs(
-    query(collection(db, COLLECTIONS.checkIns), orderBy('createdAt', 'desc'), limit(30))
+const FEED_SIZE = 30;
+/** Firestore 'in' sorgusu en fazla 30 değer kabul eder. */
+const IN_QUERY_LIMIT = 30;
+
+type FeedMode = 'kesfet' | 'takip';
+
+/** Keşfet: herkesin son check-in'leri. Takip: yalnızca takip edilenlerin check-in'leri. */
+async function fetchCheckIns(mode: FeedMode, followingIds: string[]) {
+  const checkIns = collection(db, COLLECTIONS.checkIns);
+  if (mode === 'kesfet') {
+    const snapshot = await getDocs(query(checkIns, orderBy('createdAt', 'desc'), limit(FEED_SIZE)));
+    return snapshot.docs;
+  }
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < followingIds.length; i += IN_QUERY_LIMIT) {
+    chunks.push(followingIds.slice(i, i + IN_QUERY_LIMIT));
+  }
+  const snapshots = await Promise.all(
+    chunks.map((ids) =>
+      getDocs(
+        query(checkIns, where('userId', 'in', ids), orderBy('createdAt', 'desc'), limit(FEED_SIZE))
+      )
+    )
   );
-  const rawItems = snapshot.docs.map((docItem) => ({
+  return snapshots
+    .flatMap((s) => s.docs)
+    .sort((a, b) => (b.get('createdAt')?.toMillis() ?? 0) - (a.get('createdAt')?.toMillis() ?? 0))
+    .slice(0, FEED_SIZE);
+}
+
+/** Check-in'leri ve paylaşanların görünen adlarını getirir. */
+async function fetchFeed(mode: FeedMode, followingIds: string[]): Promise<FeedItem[]> {
+  const docs = await fetchCheckIns(mode, followingIds);
+  const rawItems = docs.map((docItem) => ({
     id: docItem.id,
     ...(docItem.data() as CheckIn),
   }));
@@ -56,36 +91,70 @@ async function fetchFeed(): Promise<FeedItem[]> {
     ...item,
     displayName: userMap[item.userId]?.displayName ?? 'Bir Gezgin',
     accountType: userMap[item.userId]?.accountType ?? 'friends',
+    authorPhotoUrl: userMap[item.userId]?.photoUrl,
   }));
 }
 
 export default function HomeScreen() {
-  const [mode, setMode] = useState<'kesfet' | 'takip'>('kesfet');
-  const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const [allFeedItems, setAllFeedItems] = useState<FeedItem[]>([]);
+  const [mode, setMode] = useState<FeedMode>('kesfet');
+  const [followingIds, setFollowingIds] = useState<string[] | null>(null);
+  const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const router = useRouter();
   const theme = useTheme();
   const { user } = useAuth();
+  const [error, setError] = useState('');
+  // Takip listesi yalnızca "Takip Edilenler" sekmesinin sorgusunu etkiler. Liste henüz
+  // gelmediyse (null) anahtar ayrıdır; geldiğinde değişir ve yükleme yeniden çalışır.
+  const followingKey =
+    mode === 'takip' ? (followingIds === null ? '__bekleniyor__' : followingIds.join(',')) : 'kesfet';
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    fetchFeed()
-      .then((items) => {
-        if (!cancelled) setAllFeedItems(items);
-      })
-      .catch((error) => {
-        console.log('Akış yüklenemedi:', error.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  const load = useCallback(
+    (signal: { cancelled: boolean }, pull = false) => {
+      if (!user) return;
+      // Keşfet takip listesine ihtiyaç duymaz; Takip Edilenler liste gelene kadar bekler.
+      if (mode === 'takip' && followingIds === null) return;
+      if (pull) setRefreshing(true);
+      fetchFeed(mode, followingIds ?? [])
+        .then((next) => {
+          if (signal.cancelled) return;
+          setItems(next);
+          setError('');
+        })
+        .catch((e: Error) => {
+          console.log('Akış yüklenemedi:', e.message);
+          if (!signal.cancelled) setError(e.message);
+        })
+        .finally(() => {
+          if (signal.cancelled) return;
+          setLoading(false);
+          setRefreshing(false);
+        });
+    },
+    // followingKey, followingIds dizisinin içeriği değiştiğinde yeniden yüklemek için.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, mode, followingKey]
+  );
+
+  // Sekmeye her dönüldüğünde (ör. check-in yaptıktan sonra) akış yenilenir.
+  useFocusEffect(
+    useCallback(() => {
+      const signal = { cancelled: false };
+      load(signal);
+      return () => {
+        signal.cancelled = true;
+      };
+    }, [load])
+  );
+
+  function selectMode(next: FeedMode) {
+    if (next === mode) return;
+    setItems([]);
+    setLoading(true);
+    setMode(next);
+  }
 
   // Başka ekranda takip edilen/bırakılan kullanıcılar "Takip Edilenler" sekmesine hemen yansısın.
   useEffect(() => {
@@ -97,6 +166,7 @@ export default function HomeScreen() {
       },
       (error) => {
         console.log('Takip listesi alınamadı:', error.message);
+        setFollowingIds([]);
       }
     );
   }, [user]);
@@ -109,66 +179,98 @@ export default function HomeScreen() {
     }
   }
 
-  const displayedItems =
-    mode === 'kesfet'
-      ? allFeedItems
-      : allFeedItems.filter((item) => followingIds.includes(item.userId));
-
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <TileStripe inset={Spacing.four} />
         <FlatList
-          data={displayedItems}
+          data={items}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load({ cancelled: false }, true)}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
           ListHeaderComponent={
             <>
               <View style={styles.headerRow}>
-                <ThemedText type="subtitle">Gezgin Rotalar</ThemedText>
-                <ThemedText type="caption" themeColor="textSecondary" style={styles.headerSubtitle}>
-                  AKIŞ
-                </ThemedText>
+                <View style={styles.headerText}>
+                  <ThemedText type="subtitle">Gezgin Rotalar</ThemedText>
+                  <ThemedText type="caption" themeColor="textSecondary" style={styles.headerSubtitle}>
+                    AKIŞ
+                  </ThemedText>
+                </View>
+                <Pressable
+                  onPress={() => router.push('/search')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Gezgin ara"
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.searchButton,
+                    { backgroundColor: theme.backgroundElement },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Ionicons name="search" size={20} color={theme.text} />
+                </Pressable>
               </View>
 
               <View style={styles.tabRow}>
-                <Chip label="Keşfet" selected={mode === 'kesfet'} onPress={() => setMode('kesfet')} />
+                <Chip label="Keşfet" selected={mode === 'kesfet'} onPress={() => selectMode('kesfet')} />
                 <Chip
                   label="Takip Edilenler"
                   selected={mode === 'takip'}
-                  onPress={() => setMode('takip')}
+                  onPress={() => selectMode('takip')}
                 />
               </View>
             </>
           }
-          renderItem={({ item }) => (
-            <Card style={styles.postCard}>
-              <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
-                <View style={[styles.postAvatar, { backgroundColor: theme.highlight }]} />
-                <View style={styles.postHeaderText}>
-                  <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
-                  <ThemedText type="caption" themeColor="textSecondary">
-                    {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
-                    {formatDate(item.createdAt)}
-                  </ThemedText>
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index}>
+              <Card style={styles.postCard}>
+                <View style={styles.postTopRow}>
+                  <Pressable style={styles.postHeaderRow} onPress={() => openProfile(item.userId)}>
+                    <Avatar photoUrl={item.authorPhotoUrl} accountType={item.accountType} size={36} />
+                    <View style={styles.postHeaderText}>
+                      <ThemedText type="defaultSemiBold">{item.displayName}</ThemedText>
+                      <ThemedText type="caption" themeColor="textSecondary">
+                        {item.accountType === 'couple' ? 'Çift' : 'Arkadaş Grubu'} ·{' '}
+                        {formatDate(item.createdAt)}
+                      </ThemedText>
+                    </View>
+                  </Pressable>
+                  <DeleteCheckInButton
+                    checkIn={item}
+                    onDeleted={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
+                  />
                 </View>
-              </Pressable>
 
-              <Tag label={item.locationName} tone="accent" />
+                <Tag label={item.locationName} tone="accent" />
 
-              {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
+                {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
 
-              {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
+                {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
 
-              {item.points ? <Tag label={`+${item.points} puan`} /> : null}
-            </Card>
+                <View style={styles.postFooter}>
+                  <LikeButton checkInId={item.id} initialCount={item.likeCount ?? 0} />
+                  {item.points ? <Tag label={`+${item.points} puan`} /> : null}
+                </View>
+              </Card>
+            </FadeInItem>
           )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-              {loading
+              {error
+                ? `Akış yüklenemedi: ${error}\nAşağı çekerek tekrar deneyebilirsin.`
+                : loading
                 ? 'Yükleniyor...'
                 : mode === 'takip'
-                  ? 'Takip ettiğin kimsenin check-in\'i yok. Lider tablosundan birilerini takip edebilirsin.'
+                  ? followingIds?.length
+                    ? 'Takip ettiğin kişiler henüz check-in yapmamış.'
+                    : 'Henüz kimseyi takip etmiyorsun. Lider tablosundan birilerini takip edebilirsin.'
                   : 'Henüz kimse check-in yapmamış. İlk check-in\'i sen yap!'}
             </ThemedText>
           }
@@ -181,17 +283,34 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
+    ...ContentColumn,
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
-  headerRow: { marginBottom: Spacing.three },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    marginBottom: Spacing.three,
+  },
+  headerText: { flex: 1 },
+  searchButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.7 },
   headerSubtitle: { letterSpacing: 1 },
-  tabRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
+  tabRow: { flexDirection: 'row', gap: Spacing.four, marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   postCard: { gap: Spacing.two },
-  postHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  postAvatar: { width: 36, height: 36, borderRadius: 18 },
+  postTopRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  postHeaderRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   postHeaderText: { flex: 1 },
+  postFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { Fonts, ManropeFamily, ThemeColor } from '@/constants/theme';
+import { DisplayFamily, Fonts, ManropeFamily, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -8,6 +8,7 @@ export type ThemedTextProps = TextProps & {
     | 'default'
     | 'defaultSemiBold'
     | 'title'
+    | 'heading'
     | 'small'
     | 'smallBold'
     | 'caption'
@@ -34,7 +35,11 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   const theme = useTheme();
   const flat: TextStyle | undefined = StyleSheet.flatten([typeStyles(type), style]);
   const font =
-    type === 'code' ? null : { fontFamily: manropeFor(flat?.fontWeight), fontWeight: 'normal' as const };
+    type === 'code'
+      ? null
+      : DISPLAY_TYPES.has(type)
+        ? { fontFamily: DisplayFamily, fontWeight: 'normal' as const }
+        : { fontFamily: manropeFor(flat?.fontWeight), fontWeight: 'normal' as const };
 
   return (
     <Text
@@ -43,6 +48,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'default' && styles.default,
         type === 'defaultSemiBold' && styles.defaultSemiBold,
         type === 'title' && styles.title,
+        type === 'heading' && styles.heading,
         type === 'small' && styles.small,
         type === 'smallBold' && styles.smallBold,
         type === 'caption' && styles.caption,
@@ -57,6 +63,9 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
     />
   );
 }
+
+/** Başlık türleri serif (Playfair Display), geri kalanı Manrope. */
+const DISPLAY_TYPES = new Set<string>(['title', 'subtitle', 'heading']);
 
 function typeStyles(type: NonNullable<ThemedTextProps['type']>) {
   return styles[type];
@@ -89,16 +98,20 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 800,
+    fontSize: 38,
+    lineHeight: 44,
     letterSpacing: -0.5,
-    lineHeight: 52,
   },
   subtitle: {
     fontSize: 30,
-    lineHeight: 38,
-    fontWeight: 800,
+    lineHeight: 36,
     letterSpacing: -0.3,
+  },
+  /** Mekan ve kişi adları gibi kart başlıkları. */
+  heading: {
+    fontSize: 19,
+    lineHeight: 24,
+    letterSpacing: -0.2,
   },
   link: {
     lineHeight: 30,

@@ -3,57 +3,61 @@ import '@/global.css';
 import { Platform } from 'react-native';
 
 /**
- * Uygulamanın tek renk paleti — "İznik" yönü: çininin kobalt mavisi ana renk,
- * mercan kırmızısı ve çini yeşili vurgular. Ekranlar renkleri useTheme() ile okur;
- * bileşenlerde sabit renk (#...) yazılmaz.
+ * Uygulamanın tek renk paleti — "Pera Palas": fildişi zemin, şişe yeşili ana renk,
+ * pirinç vurgu. Koyu modda koyu yeşil-siyah zemin ve pirinç. Ekranlar renkleri
+ * useTheme() ile okur; bileşenlerde sabit renk (#...) yazılmaz.
  */
 export const Colors = {
   light: {
-    text: '#0B1F5C',
-    textSecondary: '#56628A',
-    background: '#FFFFFF',
-    backgroundElement: '#EEF1FB',
-    backgroundSelected: '#D8DEF2',
-    border: '#D8DEF2',
-    placeholder: '#8A93B5',
+    text: '#1E2A25',
+    textSecondary: '#6F716A',
+    background: '#F6F2EA',
+    /** Kartların ve metin kutularının zemini (fildişi üstünde biraz daha açık). */
+    surface: '#FFFDF8',
+    backgroundElement: '#ECE5D6',
+    backgroundSelected: '#E2D9C6',
+    border: '#E2DACB',
+    placeholder: '#A19C90',
 
-    primary: '#1D3FB8',
-    onPrimary: '#FFFFFF',
-    primarySoft: '#E6EBFA',
-    accent: '#2E9C8E',
-    accentSoft: '#DDF2EF',
-    highlight: '#C2372A',
-    highlightSoft: '#FCE5E1',
-    danger: '#B42318',
+    primary: '#1F3A33',
+    onPrimary: '#F6F2EA',
+    primarySoft: '#E4E9E2',
+    accent: '#4F6F5F',
+    accentSoft: '#E3EAE2',
+    highlight: '#A9844F',
+    highlightSoft: '#F1E8D8',
+    danger: '#9B3B2E',
   },
   dark: {
-    text: '#EEF1FB',
-    textSecondary: '#A6B0D6',
-    background: '#0A1233',
-    backgroundElement: '#131D45',
-    backgroundSelected: '#1E2A5C',
-    border: '#24316A',
-    placeholder: '#6F7AA6',
+    text: '#EFE9DD',
+    textSecondary: '#A7A496',
+    background: '#121815',
+    surface: '#1A221E',
+    backgroundElement: '#232C27',
+    backgroundSelected: '#2D3832',
+    border: '#2A332E',
+    placeholder: '#77786E',
 
-    primary: '#5B78F0',
-    onPrimary: '#FFFFFF',
-    primarySoft: '#1B2759',
-    accent: '#4CC2B2',
-    accentSoft: '#12332F',
-    highlight: '#F0705F',
-    highlightSoft: '#3A1A17',
-    danger: '#F87171',
+    primary: '#C9A774',
+    onPrimary: '#121815',
+    primarySoft: '#2A2A1F',
+    accent: '#9DB8A4',
+    accentSoft: '#1F2B25',
+    highlight: '#C9A774',
+    highlightSoft: '#2E281D',
+    danger: '#E07A6A',
   },
 } as const;
 
-/** Fotoğrafın üzerine binen etiketler; fotoğraf her temada aynı göründüğü için sabit. */
+/** Fotoğrafın üzerine binen yazı ve etiketler; fotoğraf her temada aynı göründüğü için sabit. */
 export const OnPhoto = {
-  scrim: 'rgba(11, 31, 92, 0.72)',
+  scrim: 'rgba(14, 20, 17, 0.62)',
   text: '#FFFFFF',
+  textSoft: 'rgba(255, 255, 255, 0.82)',
+  rating: '#EED9B3',
+  badge: 'rgba(255, 253, 248, 0.9)',
+  badgeText: '#1E2A25',
 } as const;
-
-/** Çini bordüründeki renk sırası (açık ve koyu temada aynı). */
-export const TileColors = ['#1D3FB8', '#C2372A', '#2E9C8E'] as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
@@ -93,15 +97,27 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const MaxContentWidth = 600;
+
+/**
+ * Ekran içeriğini en fazla MaxContentWidth genişlikte ortalar. Telefonda etkisizdir;
+ * web ve tablette fotoğrafların ve kartların pencere boyunca devleşmesini önler.
+ */
+export const ContentColumn = {
+  width: '100%',
+  maxWidth: MaxContentWidth,
+  alignSelf: 'center',
+} as const;
 
 export const Radius = {
-  small: 6,
-  medium: 10,
-  large: 12,
-  /** Çipler ve etiketler; İznik yönünde tam yuvarlak yerine hafif köşeli. */
-  pill: 8,
+  small: 8,
+  medium: 12,
+  large: 18,
+  pill: 999,
 } as const;
+
+/** Başlıklar için yüksek kontrastlı serif (Pera Palas yönü); yüklenmesi app/_layout.tsx'te. */
+export const DisplayFamily = 'PlayfairDisplay_600SemiBold';
 
 /** Manrope ağırlıkları; yüklenmeleri app/_layout.tsx'te. */
 export const ManropeFamily = {

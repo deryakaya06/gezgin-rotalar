@@ -20,6 +20,10 @@ export type UserProfile = {
   createdAt: FirestoreTimestamp | null;
   /** Son check-in'in id'si; kuralların puan artışını doğrulaması için. */
   lastCheckInId?: string;
+  /** searchKey(displayName); kullanıcı araması için. */
+  searchName?: string;
+  /** Cloudinary'deki profil fotoğrafı; yoksa hesap türü emojisi gösterilir. */
+  photoUrl?: string;
 };
 
 /** users/{uid}/visits/{locationId} — mekandan en son puan alınan zaman. */
@@ -73,6 +77,8 @@ export type CheckIn = {
   points: number;
   /** Cloudinary'deki fotoğrafın adresi (https://res.cloudinary.com/...). */
   photoUrl?: string;
+  /** Beğeni sayısı; check_ins/{id}/likes alt koleksiyonuyla aynı batch'te güncellenir. */
+  likeCount?: number;
   createdAt: FirestoreTimestamp | null;
 };
 

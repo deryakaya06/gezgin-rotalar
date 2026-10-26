@@ -4,7 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { COLLECTIONS, type UserProfile } from '@repo/shared';
 
 import { auth, db } from '@/firebase';
-import { migrateLegacyProfile } from '@/services/users';
+import { migrateLegacyProfile, syncSearchName } from '@/services/users';
 
 type AuthState = {
   user: User | null;
@@ -38,6 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     let migrating = false;
+    // Arama alanı bu oturumda yalnızca bir kez denenir. Reddedilen bir yazma dinleyiciyi
+    // yeniden tetiklediği için her bildirimde denemek sonsuz döngüye yol açıyordu.
+    let searchNameSynced = false;
     return onSnapshot(
       doc(db, COLLECTIONS.users, user.uid),
       (snapshot) => {
@@ -56,6 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setProfileState({ uid: user.uid, data: data as UserProfile });
+        // Arama alanı olmayan (eski) hesaplar ilk girişte aramaya eklenir.
+        if (!searchNameSynced) {
+          searchNameSynced = true;
+          syncSearchName(user.uid, data as UserProfile)?.catch((error) => {
+            console.log('Arama alanı güncellenemedi:', error.message);
+          });
+        }
       },
       (error) => {
         console.log('Profil dinlenemedi:', error.message);

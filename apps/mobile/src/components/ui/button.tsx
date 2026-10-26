@@ -56,15 +56,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   large: {
-    borderRadius: Radius.medium,
+    borderRadius: Radius.pill,
     paddingVertical: 14,
     paddingHorizontal: Spacing.four,
   },
   small: {
-    borderRadius: Radius.small,
+    borderRadius: Radius.pill,
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
-  text: { fontWeight: 700 },
+  text: { fontWeight: 600, letterSpacing: 0.3 },
   dimmed: { opacity: 0.6 },
 });

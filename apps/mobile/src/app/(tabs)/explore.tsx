@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Location, WithId } from '@repo/shared';
 
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TileStripe } from '@/components/tile-stripe';
 import { Chip } from '@/components/ui/chip';
-import { Tag } from '@/components/ui/tag';
+import { FadeInItem, PressableScale } from '@/components/ui/motion';
 import { TextField } from '@/components/ui/text-field';
-import { OnPhoto, Radius, Spacing } from '@/constants/theme';
+import { ContentColumn, OnPhoto, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { photoThumbnail } from '@/services/photos';
 import {
@@ -103,7 +103,6 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <TileStripe inset={Spacing.four} />
         {view === 'map' ? (
           <View style={styles.mapContainer}>
             {header}
@@ -116,63 +115,54 @@ export default function ExploreScreen() {
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={header}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.card,
-                  { borderColor: item.isSponsored ? theme.highlight : theme.border },
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => openLocation(item)}
-                accessibilityRole="button"
-                accessibilityLabel={`${item.name}, ${[item.category, item.district].filter(Boolean).join(', ')}`}
-              >
-                <View style={[styles.cover, { backgroundColor: theme.highlightSoft }]}>
-                  {item.coverPhotoUrl ? (
-                    <Image
-                      source={{ uri: photoThumbnail(item.coverPhotoUrl, 800, 440) }}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                      transition={150}
-                      accessibilityIgnoresInvertColors
-                    />
-                  ) : (
-                    <ThemedText style={styles.coverEmoji}>{categoryEmoji(item.category)}</ThemedText>
-                  )}
-                  {item.isSponsored ? (
-                    <View style={[styles.overlayBadge, styles.badgeLeft, { backgroundColor: theme.highlight }]}>
-                      <ThemedText type="caption" style={[styles.badgeText, { color: theme.onPrimary }]}>
-                        Sponsorlu
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                  {item.rating ? (
-                    <View style={[styles.overlayBadge, styles.badgeRight]}>
-                      <ThemedText type="caption" style={[styles.badgeText, styles.ratingText]}>
-                        ★ {item.rating.toFixed(1)}
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.cardContent}>
-                  <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                    {item.name}
-                  </ThemedText>
-                  {item.category || item.district ? (
-                    <ThemedText type="caption" themeColor="textSecondary">
-                      {[item.category, item.district].filter(Boolean).join(' · ')}
-                    </ThemedText>
-                  ) : null}
-                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-                    {item.description}
-                  </ThemedText>
-                  {item.isFree ? (
-                    <View style={styles.tagRow}>
-                      <Tag label="Ücretsiz Giriş" tone="accent" />
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
+            renderItem={({ item, index }) => (
+              <FadeInItem index={index}>
+                <PressableScale
+                  style={styles.card}
+                  onPress={() => openLocation(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name}, ${[item.category, item.district].filter(Boolean).join(', ')}`}
+                >
+                  <View style={[styles.cover, { backgroundColor: theme.backgroundElement }]}>
+                    {item.coverPhotoUrl ? (
+                      <Image
+                        source={{ uri: photoThumbnail(item.coverPhotoUrl, 800, 600) }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                        transition={150}
+                        accessibilityIgnoresInvertColors
+                      />
+                    ) : (
+                      <ThemedText style={styles.coverEmoji}>{categoryEmoji(item.category)}</ThemedText>
+                    )}
+                    {item.isSponsored ? (
+                      <View style={styles.badge}>
+                        <ThemedText type="caption" style={styles.badgeText}>
+                          SPONSORLU
+                        </ThemedText>
+                      </View>
+                    ) : null}
+                    {/* Alttan koyulaşan geçiş: ad ve bilgiler fotoğrafın üstünde okunur. */}
+                    <LinearGradient colors={['transparent', OnPhoto.scrim]} style={styles.shade}>
+                      <View style={styles.shadeText}>
+                        <ThemedText type="heading" style={styles.onPhoto} numberOfLines={1}>
+                          {item.name}
+                        </ThemedText>
+                        <ThemedText type="caption" style={styles.onPhotoSoft} numberOfLines={1}>
+                          {[item.category, item.district, item.isFree ? 'Ücretsiz giriş' : null]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </ThemedText>
+                      </View>
+                      {item.rating ? (
+                        <ThemedText type="smallBold" style={styles.rating}>
+                          ★ {item.rating.toFixed(1)}
+                        </ThemedText>
+                      ) : null}
+                    </LinearGradient>
+                  </View>
+                </PressableScale>
+              </FadeInItem>
             )}
             ListEmptyComponent={
               !loading ? (
@@ -205,35 +195,43 @@ function categoryEmoji(category?: string) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four },
+  safeArea: { ...ContentColumn, flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four },
   header: { gap: Spacing.three, marginBottom: Spacing.three },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  viewToggle: { flexDirection: 'row', gap: Spacing.one },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  districtRow: { gap: Spacing.two, paddingRight: Spacing.four },
+  viewToggle: { flexDirection: 'row', gap: Spacing.three },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.four },
+  districtRow: { gap: Spacing.four, paddingRight: Spacing.four },
   mapContainer: { flex: 1, paddingBottom: Spacing.three },
   map: { flex: 1 },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
-  card: {
-    borderWidth: 1.5,
-    borderRadius: Radius.large,
-    overflow: 'hidden',
-  },
-  pressed: { opacity: 0.8 },
-  cover: { aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: Radius.large, overflow: 'hidden' },
+  cover: { aspectRatio: 4 / 3, alignItems: 'center', justifyContent: 'center' },
   coverEmoji: { fontSize: 40, lineHeight: 48 },
-  overlayBadge: {
+  badge: {
     position: 'absolute',
-    top: Spacing.two,
-    paddingHorizontal: 8,
+    top: Spacing.three,
+    left: Spacing.three,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: Radius.small,
+    borderRadius: Radius.pill,
+    backgroundColor: OnPhoto.badge,
   },
-  badgeLeft: { left: Spacing.two },
-  badgeRight: { right: Spacing.two, backgroundColor: OnPhoto.scrim },
-  badgeText: { fontWeight: 700 },
-  ratingText: { color: OnPhoto.text },
-  cardContent: { padding: Spacing.three, gap: Spacing.one },
-  tagRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
+  badgeText: { color: OnPhoto.badgeText, fontWeight: 700, letterSpacing: 1.2, fontSize: 10 },
+  shade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.five,
+    paddingBottom: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+  },
+  shadeText: { flex: 1, gap: 2 },
+  onPhoto: { color: OnPhoto.text },
+  onPhotoSoft: { color: OnPhoto.textSoft, letterSpacing: 0.3 },
+  rating: { color: OnPhoto.rating },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });
