@@ -1,5 +1,5 @@
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, PressableProps, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -34,7 +34,7 @@ export default function AppTabs() {
 function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   const theme = useTheme();
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable {...(props as PressableProps)} style={({ pressed }) => pressed && styles.pressed}>
       <View
         style={[
           styles.tabButtonView,

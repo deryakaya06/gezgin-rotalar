@@ -169,7 +169,7 @@ export default function ExploreScreen() {
                 <ThemedText themeColor="textSecondary" style={styles.emptyText}>
                   Bu filtrelere uyan mekan bulunamadı.
                 </ThemedText>
-              ) : null
+              ) : undefined
             }
           />
         )}

@@ -33,7 +33,7 @@ function bodyFamilyFor(weight: unknown) {
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
-  const flat: TextStyle | undefined = StyleSheet.flatten([typeStyles(type), style]);
+  const flat = StyleSheet.flatten([typeStyles(type), style]) as TextStyle | undefined;
   const font =
     type === 'code'
       ? null

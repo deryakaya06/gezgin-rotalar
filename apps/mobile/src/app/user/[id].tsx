@@ -104,7 +104,7 @@ export default function UserProfileScreen() {
             </Card>
           )}
           ListEmptyComponent={
-            notFound ? null : (
+            notFound ? undefined : (
               <ThemedText themeColor="textSecondary" style={styles.emptyText}>
                 Henüz check-in yok.
               </ThemedText>
