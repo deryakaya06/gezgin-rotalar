@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 // Ağırlıklar tek tek içe aktarılır; paketin kökü 7 ağırlığın hepsini uygulamaya katar.
-import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
-import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
-import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
-import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
-import { PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display/600SemiBold';
+import { Lora_600SemiBold } from '@expo-google-fonts/lora/600SemiBold';
+import { Nunito_500Medium } from '@expo-google-fonts/nunito/500Medium';
+import { Nunito_600SemiBold } from '@expo-google-fonts/nunito/600SemiBold';
+import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold';
+import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -55,11 +55,11 @@ export default function RootLayout() {
 function RootNavigator() {
   const { user, initializing } = useAuth();
   const [fontsLoaded, fontError] = useFonts({
-    Manrope_500Medium,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
-    Manrope_800ExtraBold,
-    PlayfairDisplay_600SemiBold,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Lora_600SemiBold,
   });
   // Yazı tipi yüklenemezse sistem yazısıyla devam edilir.
   const ready = !initializing && (fontsLoaded || !!fontError);

@@ -3,60 +3,68 @@ import '@/global.css';
 import { Platform } from 'react-native';
 
 /**
- * Uygulamanın tek renk paleti — "Pera Palas": fildişi zemin, şişe yeşili ana renk,
- * pirinç vurgu. Koyu modda koyu yeşil-siyah zemin ve pirinç. Ekranlar renkleri
- * useTheme() ile okur; bileşenlerde sabit renk (#...) yazılmaz.
+ * Uygulamanın tek renk paleti — "Pastel": krem zemin, adaçayı yeşili ana renk,
+ * pudra pembe vurgu ve eylem düğmeleri. Koyu modda sıcak kahve-siyah zemin.
+ * Ekranlar renkleri useTheme() ile okur; bileşenlerde sabit renk (#...) yazılmaz.
  */
 export const Colors = {
   light: {
-    text: '#1E2A25',
-    textSecondary: '#6F716A',
-    background: '#F6F2EA',
-    /** Kartların ve metin kutularının zemini (fildişi üstünde biraz daha açık). */
-    surface: '#FFFDF8',
-    backgroundElement: '#ECE5D6',
-    backgroundSelected: '#E2D9C6',
-    border: '#E2DACB',
-    placeholder: '#A19C90',
+    text: '#3E3A39',
+    textSecondary: '#8A8380',
+    background: '#FBF6F1',
+    /** Kartların ve metin kutularının zemini (kremin üstünde beyaz). */
+    surface: '#FFFFFF',
+    backgroundElement: '#F3E9E2',
+    backgroundSelected: '#EADDD4',
+    border: '#F0E6DF',
+    placeholder: '#B3AAA5',
+    /** Kartların altındaki yumuşak pembe gölge. */
+    shadow: '#E8A3A1',
 
-    primary: '#1F3A33',
-    onPrimary: '#F6F2EA',
-    primarySoft: '#E4E9E2',
-    accent: '#4F6F5F',
-    accentSoft: '#E3EAE2',
-    highlight: '#A9844F',
-    highlightSoft: '#F1E8D8',
-    danger: '#9B3B2E',
+    primary: '#5F7D69',
+    onPrimary: '#FFFFFF',
+    primarySoft: '#E6EEE8',
+    accent: '#7C9A86',
+    accentSoft: '#EEF3EF',
+    highlight: '#D9827F',
+    highlightSoft: '#FBE9E7',
+    /** Check-in gibi ana eylem düğmeleri: pudra pembe üstünde koyu yazı. */
+    cta: '#E8A3A1',
+    onCta: '#3E3A39',
+    danger: '#B4544B',
   },
   dark: {
-    text: '#EFE9DD',
-    textSecondary: '#A7A496',
-    background: '#121815',
-    surface: '#1A221E',
-    backgroundElement: '#232C27',
-    backgroundSelected: '#2D3832',
-    border: '#2A332E',
-    placeholder: '#77786E',
+    text: '#F3EBE6',
+    textSecondary: '#ABA19C',
+    background: '#1C1817',
+    surface: '#262120',
+    backgroundElement: '#302A28',
+    backgroundSelected: '#3B3431',
+    border: '#352E2C',
+    placeholder: '#7D7471',
+    shadow: '#000000',
 
-    primary: '#C9A774',
-    onPrimary: '#121815',
-    primarySoft: '#2A2A1F',
-    accent: '#9DB8A4',
-    accentSoft: '#1F2B25',
-    highlight: '#C9A774',
-    highlightSoft: '#2E281D',
-    danger: '#E07A6A',
+    primary: '#A7C2AE',
+    onPrimary: '#1C1817',
+    primarySoft: '#2A322C',
+    accent: '#A7C2AE',
+    accentSoft: '#252C27',
+    highlight: '#EBA9A6',
+    highlightSoft: '#3A2927',
+    cta: '#EBA9A6',
+    onCta: '#1C1817',
+    danger: '#E58C80',
   },
 } as const;
 
 /** Fotoğrafın üzerine binen yazı ve etiketler; fotoğraf her temada aynı göründüğü için sabit. */
 export const OnPhoto = {
-  scrim: 'rgba(14, 20, 17, 0.62)',
+  scrim: 'rgba(40, 30, 28, 0.55)',
   text: '#FFFFFF',
-  textSoft: 'rgba(255, 255, 255, 0.82)',
-  rating: '#EED9B3',
-  badge: 'rgba(255, 253, 248, 0.9)',
-  badgeText: '#1E2A25',
+  textSoft: 'rgba(255, 255, 255, 0.85)',
+  rating: '#FFD9D4',
+  badge: 'rgba(255, 255, 255, 0.9)',
+  badgeText: '#5F7D69',
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
@@ -110,19 +118,19 @@ export const ContentColumn = {
 } as const;
 
 export const Radius = {
-  small: 8,
-  medium: 12,
-  large: 18,
+  small: 12,
+  medium: 18,
+  large: 24,
   pill: 999,
 } as const;
 
-/** Başlıklar için yüksek kontrastlı serif (Pera Palas yönü); yüklenmesi app/_layout.tsx'te. */
-export const DisplayFamily = 'PlayfairDisplay_600SemiBold';
+/** Başlıklar için yumuşak hatlı serif (Lora); yüklenmesi app/_layout.tsx'te. */
+export const DisplayFamily = 'Lora_600SemiBold';
 
-/** Manrope ağırlıkları; yüklenmeleri app/_layout.tsx'te. */
-export const ManropeFamily = {
-  500: 'Manrope_500Medium',
-  600: 'Manrope_600SemiBold',
-  700: 'Manrope_700Bold',
-  800: 'Manrope_800ExtraBold',
+/** Gövde yazısı Nunito'nun ağırlıkları; yüklenmeleri app/_layout.tsx'te. */
+export const BodyFamily = {
+  500: 'Nunito_500Medium',
+  600: 'Nunito_600SemiBold',
+  700: 'Nunito_700Bold',
+  800: 'Nunito_800ExtraBold',
 } as const;

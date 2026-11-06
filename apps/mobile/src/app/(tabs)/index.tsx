@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.7 },
   headerSubtitle: { letterSpacing: 1 },
-  tabRow: { flexDirection: 'row', gap: Spacing.four, marginBottom: Spacing.three },
+  tabRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   postCard: { gap: Spacing.two },
   postTopRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

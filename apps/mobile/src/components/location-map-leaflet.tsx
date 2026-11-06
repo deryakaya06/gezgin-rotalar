@@ -6,7 +6,7 @@ import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
 import type { Region } from 'react-native-maps';
 import type { Location, WithId } from '@repo/shared';
 
-import { ManropeFamily } from '@/constants/theme';
+import { BodyFamily } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ISTANBUL_REGION } from '@/services/locations';
 
@@ -59,8 +59,8 @@ export default function LeafletMap({ locations, onSelect, initialRegion, interac
           >
             {interactive ? (
               <Popup>
-                <div style={{ fontFamily: ManropeFamily[500], display: 'grid', gap: 4 }}>
-                  <strong style={{ fontFamily: ManropeFamily[700] }}>{location.name}</strong>
+                <div style={{ fontFamily: BodyFamily[500], display: 'grid', gap: 4 }}>
+                  <strong style={{ fontFamily: BodyFamily[700] }}>{location.name}</strong>
                   <span>{[location.category, location.district].filter(Boolean).join(' · ')}</span>
                   {onSelect ? (
                     <button
@@ -73,7 +73,7 @@ export default function LeafletMap({ locations, onSelect, initialRegion, interac
                         borderRadius: 8,
                         background: theme.primary,
                         color: theme.onPrimary,
-                        fontFamily: ManropeFamily[700],
+                        fontFamily: BodyFamily[700],
                         cursor: 'pointer',
                       }}
                     >

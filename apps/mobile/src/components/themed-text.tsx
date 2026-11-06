@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { DisplayFamily, Fonts, ManropeFamily, ThemeColor } from '@/constants/theme';
+import { DisplayFamily, Fonts, BodyFamily, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -21,14 +21,14 @@ export type ThemedTextProps = TextProps & {
 
 /**
  * Özel yazı tiplerinde fontWeight aileyi değiştirmez (Android'de yok sayar, iOS'ta
- * sahte kalınlık üretir). Bu yüzden istenen kalınlık Manrope'un ilgili ailesine çevrilir.
+ * sahte kalınlık üretir). Bu yüzden istenen kalınlık Nunito'nun ilgili ailesine çevrilir.
  */
-function manropeFor(weight: unknown) {
+function bodyFamilyFor(weight: unknown) {
   const w = Number(weight ?? 500);
-  if (w >= 800) return ManropeFamily[800];
-  if (w >= 700) return ManropeFamily[700];
-  if (w >= 600) return ManropeFamily[600];
-  return ManropeFamily[500];
+  if (w >= 800) return BodyFamily[800];
+  if (w >= 700) return BodyFamily[700];
+  if (w >= 600) return BodyFamily[600];
+  return BodyFamily[500];
 }
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
@@ -39,7 +39,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
       ? null
       : DISPLAY_TYPES.has(type)
         ? { fontFamily: DisplayFamily, fontWeight: 'normal' as const }
-        : { fontFamily: manropeFor(flat?.fontWeight), fontWeight: 'normal' as const };
+        : { fontFamily: bodyFamilyFor(flat?.fontWeight), fontWeight: 'normal' as const };
 
   return (
     <Text
@@ -64,7 +64,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   );
 }
 
-/** Başlık türleri serif (Playfair Display), geri kalanı Manrope. */
+/** Başlık türleri serif (Lora), geri kalanı Nunito. */
 const DISPLAY_TYPES = new Set<string>(['title', 'subtitle', 'heading']);
 
 function typeStyles(type: NonNullable<ThemedTextProps['type']>) {
