@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { signOut } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 
 import { ProfileSummary } from '@/components/profile-summary';
@@ -10,80 +9,40 @@ import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
-import { auth } from '@/firebase';
-import { pickPhoto, uploadPhoto } from '@/services/photos';
-import { setProfilePhoto } from '@/services/users';
+import { useProfilePhoto } from '@/hooks/use-profile-photo';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { user, profile } = useAuth();
-  const [photoBusy, setPhotoBusy] = useState(false);
-
-  async function changePhoto(source: 'camera' | 'library') {
-    if (!user) return;
-    const picked = await pickPhoto(source);
-    if (picked === 'denied') {
-      Alert.alert('İzin gerekli', 'Fotoğraf seçebilmek için Ayarlar\'dan izin vermelisin.');
-      return;
-    }
-    if (!picked) return;
-    setPhotoBusy(true);
-    try {
-      await setProfilePhoto(user.uid, await uploadPhoto(picked));
-    } catch (error) {
-      Alert.alert('Fotoğraf kaydedilemedi', (error as Error).message);
-    } finally {
-      setPhotoBusy(false);
-    }
-  }
-
-  function removePhoto() {
-    if (!user) return;
-    setProfilePhoto(user.uid, null).catch((error: Error) =>
-      Alert.alert('Fotoğraf kaldırılamadı', error.message)
-    );
-  }
-
-  function handleEditPhoto() {
-    // Web'de Alert menüsü yok; doğrudan dosya seçici açılır.
-    if (Platform.OS === 'web') {
-      changePhoto('library');
-      return;
-    }
-    Alert.alert('Profil fotoğrafı', undefined, [
-      { text: 'Fotoğraf çek', onPress: () => changePhoto('camera') },
-      { text: 'Galeriden seç', onPress: () => changePhoto('library') },
-      ...(profile?.photoUrl
-        ? [{ text: 'Fotoğrafı kaldır', style: 'destructive' as const, onPress: removePhoto }]
-        : []),
-      { text: 'Vazgeç', style: 'cancel' as const },
-    ]);
-  }
-
-  function handleLogout() {
-    // Yönlendirmeyi _layout'taki Stack.Protected yapar.
-    signOut(auth);
-  }
+  const { photoBusy, editPhoto } = useProfilePhoto();
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="subtitle">Profil</ThemedText>
+          <View style={styles.titleRow}>
+            <ThemedText type="subtitle">Profil</ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ayarlar ve gizlilik"
+              hitSlop={10}
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <Ionicons name="menu" size={30} color={theme.text} />
+            </Pressable>
+          </View>
 
-          <ProfileSummary
-            uid={user?.uid}
-            profile={profile}
-            onEditPhoto={handleEditPhoto}
-            photoBusy={photoBusy}
-          >
+          <ProfileSummary uid={user?.uid} profile={profile} onEditPhoto={editPhoto} photoBusy={photoBusy}>
             <ThemedText type="caption" themeColor="textSecondary">
               {user?.email}
             </ThemedText>
           </ProfileSummary>
 
+          <Button title="Profili Düzenle" variant="outline" onPress={() => router.push('/settings/edit-profile')} />
           <Button title="Lider Tablosunu Gör" onPress={() => router.push('/leaderboard')} />
-          <Button title="Çıkış Yap" variant="outline" onPress={handleLogout} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -93,6 +52,8 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { ...ContentColumn, flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pressed: { opacity: 0.6 },
   content: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

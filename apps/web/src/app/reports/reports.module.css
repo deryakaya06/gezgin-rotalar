@@ -12,3 +12,9 @@
   .photo { width: 72px; height: 72px; }
   .actions { grid-column: 1 / -1; grid-auto-flow: column; }
 }
+.noMedia { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 640px) {
+  .noMedia { grid-template-columns: minmax(0, 1fr); }
+}
+.form { display: grid; gap: 12px; padding: 16px; max-width: 560px; }
+.form button { justify-self: start; }

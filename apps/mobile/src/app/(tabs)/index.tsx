@@ -20,6 +20,7 @@ import { Avatar } from '@/components/avatar';
 import { CheckInPhoto } from '@/components/check-in-photo';
 import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { LikeButton } from '@/components/like-button';
+import { NotificationBell } from '@/components/notification-bell';
 import { ReportCheckInButton } from '@/components/report-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -30,6 +31,7 @@ import { Tag } from '@/components/ui/tag';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDate } from '@/utils/format';
 
@@ -38,6 +40,7 @@ type FeedItem = CheckIn & {
   displayName: string;
   accountType: UserProfile['accountType'];
   authorPhotoUrl?: string;
+  taggedNames: string[];
 };
 
 const FEED_SIZE = 30;
@@ -79,7 +82,9 @@ async function fetchFeed(mode: FeedMode, followingIds: string[]): Promise<FeedIt
     ...(docItem.data() as CheckIn),
   }));
 
-  const uniqueUserIds = Array.from(new Set(rawItems.map((item) => item.userId)));
+  const uniqueUserIds = Array.from(
+    new Set(rawItems.flatMap((item) => [item.userId, ...(item.taggedUserIds ?? [])]))
+  );
   const userDocs = await Promise.all(
     uniqueUserIds.map((uid) => getDoc(doc(db, COLLECTIONS.users, uid)))
   );
@@ -93,6 +98,7 @@ async function fetchFeed(mode: FeedMode, followingIds: string[]): Promise<FeedIt
     displayName: userMap[item.userId]?.displayName ?? 'Bir Gezgin',
     accountType: userMap[item.userId]?.accountType ?? 'friends',
     authorPhotoUrl: userMap[item.userId]?.photoUrl,
+    taggedNames: (item.taggedUserIds ?? []).flatMap((id) => userMap[id]?.displayName ?? []),
   }));
 }
 
@@ -106,6 +112,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { user } = useAuth();
+  const { blockedIds } = useBlockedUsers();
   const [error, setError] = useState('');
   // Takip listesi yalnızca "Takip Edilenler" sekmesinin sorgusunu etkiler. Liste henüz
   // gelmediyse (null) anahtar ayrıdır; geldiğinde değişir ve yükleme yeniden çalışır.
@@ -184,7 +191,7 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <FlatList
-          data={items}
+          data={items.filter((item) => !blockedIds.has(item.userId))}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           refreshControl={
@@ -204,6 +211,7 @@ export default function HomeScreen() {
                     AKIŞ
                   </ThemedText>
                 </View>
+                <NotificationBell />
                 <Pressable
                   onPress={() => router.push('/search')}
                   accessibilityRole="button"
@@ -251,6 +259,12 @@ export default function HomeScreen() {
                 </View>
 
                 <Tag label={item.locationName} tone="accent" />
+
+                {item.taggedNames.length > 0 ? (
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    Birlikte: {item.taggedNames.join(', ')}
+                  </ThemedText>
+                ) : null}
 
                 {item.photoUrl ? <CheckInPhoto url={item.photoUrl} /> : null}
 

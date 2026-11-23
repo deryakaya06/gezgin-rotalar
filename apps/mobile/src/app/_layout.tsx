@@ -84,6 +84,14 @@ function RootNavigator() {
           <Stack.Screen name="follows" />
           <Stack.Screen name="calendar" />
           <Stack.Screen name="plan-trip" />
+          <Stack.Screen name="suggestions" />
+          <Stack.Screen name="suggest-location" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="settings/index" />
+          <Stack.Screen name="settings/edit-profile" />
+          <Stack.Screen name="settings/security" />
+          <Stack.Screen name="settings/privacy" />
+          <Stack.Screen name="settings/blocked" />
         </Stack.Protected>
 
         <Stack.Protected guard={!user}>

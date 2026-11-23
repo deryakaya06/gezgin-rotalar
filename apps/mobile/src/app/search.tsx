@@ -10,9 +10,11 @@ import { TextField } from '@/components/ui/text-field';
 import { FadeInItem } from '@/components/ui/motion';
 import { UserRow } from '@/components/user-row';
 import { ContentColumn, Spacing } from '@/constants/theme';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 import { searchUsers } from '@/services/users';
 
 export default function SearchScreen() {
+  const { blockedIds } = useBlockedUsers();
   const [text, setText] = useState('');
   const [results, setResults] = useState<WithId<UserProfile>[]>([]);
   const [searchedFor, setSearchedFor] = useState('');
@@ -59,7 +61,7 @@ export default function SearchScreen() {
           clearButtonMode="while-editing"
         />
         <FlatList
-          data={hasQuery ? results : []}
+          data={hasQuery ? results.filter((item) => !blockedIds.has(item.id)) : []}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"

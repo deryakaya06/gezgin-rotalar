@@ -35,8 +35,72 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(uid)/followers/$(followerId);
     }
 
+    function blockedPath(uid, targetId) {
+      return /databases/$(database)/documents/users/$(uid)/blocked/$(targetId);
+    }
+
+    // Bildirimi yazan kişi kendisidir, adı profilindekiyle aynıdır ve okunmamış başlar.
+    function validNotification() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['type', 'actorId', 'actorName', 'targetId', 'targetName', 'read', 'createdAt'])
+        && data.keys().hasAll(['type', 'actorId', 'actorName', 'targetId', 'targetName', 'read', 'createdAt'])
+        && data.actorId == request.auth.uid
+        && data.actorName == get(userPath(request.auth.uid)).data.displayName
+        && data.targetId is string
+        && data.targetName is string
+        && data.targetName.size() <= 120
+        && data.read == false
+        && data.createdAt == request.time;
+    }
+
+    // Aynı batch'te gerçekten takip edilmiş olmalı.
+    function isFollowNotification(uid, notificationId) {
+      let data = request.resource.data;
+      return data.type == 'follow'
+        && notificationId == 'follow_' + request.auth.uid
+        && data.targetId == ''
+        && data.targetName == ''
+        && existsAfter(followingPath(request.auth.uid, uid));
+    }
+
+    // Aynı batch'te oluşturulan check-in'de etiketlenmiş ve takip edilen biri olmalı.
+    // Engelleme iki yöndeki takibi kaldırdığı için takip şartı engeli de kapsar.
+    function isTagNotification(uid, notificationId) {
+      let data = request.resource.data;
+      let checkIn = getAfter(checkInPath(data.targetId)).data;
+      return data.type == 'tag'
+        && notificationId == 'tag_' + data.targetId
+        && uid != request.auth.uid
+        && !exists(checkInPath(data.targetId))
+        && checkIn.userId == request.auth.uid
+        && uid in checkIn.get('taggedUserIds', [])
+        && checkIn.locationName == data.targetName
+        && exists(followingPath(request.auth.uid, uid));
+    }
+
+    // Admin, bekleyen öneriyi aynı batch'te onaylayıp reddederken sahibine haber verir.
+    function isSuggestionNotification(uid, notificationId) {
+      let data = request.resource.data;
+      let after = getAfter(suggestionPath(data.targetId)).data;
+      return isAdmin()
+        && data.type in ['suggestion_approved', 'suggestion_rejected']
+        && notificationId == 'suggestion_' + data.targetId
+        && get(suggestionPath(data.targetId)).data.status == 'pending'
+        && after.userId == uid
+        && after.name == data.targetName
+        && after.status == (data.type == 'suggestion_approved' ? 'approved' : 'rejected');
+    }
+
     function likePath(checkInId, uid) {
       return /databases/$(database)/documents/check_ins/$(checkInId)/likes/$(uid);
+    }
+
+    function suggestionPath(id) {
+      return /databases/$(database)/documents/suggested_locations/$(id);
+    }
+
+    function suggestionVotePath(id, uid) {
+      return /databases/$(database)/documents/suggested_locations/$(id)/votes/$(uid);
     }
 
     function visitPath(uid, locationId) {
@@ -189,8 +253,12 @@ service cloud.firestore {
           && exists(userPath(targetId))
           && request.resource.data.keys().hasOnly(['createdAt'])
           && request.resource.data.createdAt == request.time
-          && existsAfter(followerPath(targetId, uid));
-        allow delete: if isOwner(uid)
+          && existsAfter(followerPath(targetId, uid))
+          // Engellenen kişi engelleyeni takip edemez; engelleyen de önce engeli kaldırmalıdır.
+          && !exists(blockedPath(targetId, uid))
+          && !exists(blockedPath(uid, targetId));
+        // Takibi bırakan ya da takipçisini çıkaran (engelleme) taraf silebilir.
+        allow delete: if (isOwner(uid) || isOwner(targetId))
           && !existsAfter(followerPath(targetId, uid));
       }
 
@@ -200,8 +268,45 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['createdAt'])
           && request.resource.data.createdAt == request.time
           && existsAfter(followingPath(followerId, uid));
-        allow delete: if isOwner(followerId)
+        allow delete: if (isOwner(followerId) || isOwner(uid))
           && !existsAfter(followingPath(followerId, uid));
+      }
+
+      // Bildirimleri yalnızca sahibi okur ve okundu yapar. Takibi bırakan kişi kendi
+      // takip bildirimini geri alabilir (belge id'si kimin yazdığını gösterir).
+      match /notifications/{notificationId} {
+        allow read: if isOwner(uid);
+        allow create: if signedIn()
+          && validNotification()
+          && (
+            isFollowNotification(uid, notificationId)
+            || isTagNotification(uid, notificationId)
+            || isSuggestionNotification(uid, notificationId)
+          );
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+          && request.resource.data.read == true;
+        allow delete: if isOwner(uid)
+          || (signedIn() && notificationId == 'follow_' + request.auth.uid);
+      }
+
+      // Duyuruların en son ne zaman görüldüğü (okunmamış sayısı için).
+      match /notification_state/{stateId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && stateId == 'announcements'
+          && request.resource.data.keys().hasOnly(['lastSeenAt'])
+          && request.resource.data.lastSeenAt == request.time;
+      }
+
+      // Engellenenler listesi özeldir; karşı taraf engellendiğini göremez.
+      match /blocked/{targetId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && targetId != uid
+          && exists(userPath(targetId))
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
       }
 
       // Mekan başına son puan alınan zaman; 24 saat kuralını uygulamak için.
@@ -224,6 +329,95 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, update: if isAdmin() && validLocation(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    // Mekan önerileri herkese açıktır. Oy sayacı yalnızca ±1 ve aynı batch'te isteği
+    // yapanın oy kaydı eklenip silinerek değişir; kişi kendi önerisine oy veremez.
+    match /suggested_locations/{suggestionId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'userId', 'userName', 'name', 'district', 'category', 'description',
+          'status', 'voteCount', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'userId', 'userName', 'name', 'district', 'category', 'description',
+          'status', 'voteCount', 'createdAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.userName == get(userPath(request.auth.uid)).data.displayName
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.district is string
+        && request.resource.data.district.size() >= 2
+        && request.resource.data.district.size() <= 40
+        // packages/shared/src/constants.ts LOCATION_CATEGORIES ile aynı olmalı.
+        && request.resource.data.category in ['Tarihi', 'Müze', 'Park', 'Manzara', 'Çarşı', 'Sokak', 'Ada', 'Lezzet']
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.status == 'pending'
+        && request.resource.data.voteCount == 0
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if signedIn()
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCount'])
+        && (
+          (
+            request.resource.data.voteCount == resource.data.voteCount + 1
+            && !exists(suggestionVotePath(suggestionId, request.auth.uid))
+            && existsAfter(suggestionVotePath(suggestionId, request.auth.uid))
+          )
+          || (
+            request.resource.data.voteCount == resource.data.voteCount - 1
+            && exists(suggestionVotePath(suggestionId, request.auth.uid))
+            && !existsAfter(suggestionVotePath(suggestionId, request.auth.uid))
+          )
+        );
+
+      // Admin bekleyen öneriyi onaylar ya da reddeder.
+      allow update: if isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['approved', 'rejected'];
+
+      allow delete: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'pending';
+
+      match /votes/{voterId} {
+        allow read: if signedIn();
+        allow create: if isOwner(voterId)
+          && get(suggestionPath(suggestionId)).data.userId != voterId
+          && get(suggestionPath(suggestionId)).data.status == 'pending'
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          && getAfter(suggestionPath(suggestionId)).data.voteCount
+               == get(suggestionPath(suggestionId)).data.voteCount + 1;
+        allow delete: if isOwner(voterId)
+          && getAfter(suggestionPath(suggestionId)).data.voteCount
+               == get(suggestionPath(suggestionId)).data.voteCount - 1;
+      }
+    }
+
+    // Sponsorlu mekan duyuruları: herkes okur, yalnızca admin yazar.
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow delete: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'body', 'locationId', 'locationName', 'createdAt'])
+        && request.resource.data.keys().hasAll(['title', 'body', 'locationId', 'locationName', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 2
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.body is string
+        && request.resource.data.body.size() <= 300
+        && request.resource.data.locationId is string
+        && get(locationPath(request.resource.data.locationId)).data.get('isSponsored', false) == true
+        && request.resource.data.locationName == get(locationPath(request.resource.data.locationId)).data.name
+        && request.resource.data.createdAt == request.time;
     }
 
     // Gezi planları özeldir; yalnızca sahibi görür, oluşturur ve siler.
@@ -273,8 +467,12 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.keys().hasOnly([
-          'userId', 'locationId', 'locationName', 'note', 'points', 'createdAt', 'photoUrl'
+          'userId', 'locationId', 'locationName', 'note', 'points', 'createdAt', 'photoUrl',
+          'taggedUserIds'
         ])
+        // packages/shared/src/constants.ts MAX_CHECKIN_TAGS ile aynı olmalı.
+        && request.resource.data.get('taggedUserIds', []) is list
+        && request.resource.data.get('taggedUserIds', []).size() <= 5
         && (!('photoUrl' in request.resource.data) || validPhotoUrl(request.resource.data.photoUrl))
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 500
