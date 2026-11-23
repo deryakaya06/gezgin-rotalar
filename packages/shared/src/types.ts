@@ -79,6 +79,8 @@ export type CheckIn = {
   photoUrl?: string;
   /** Beğeni sayısı; check_ins/{id}/likes alt koleksiyonuyla aynı batch'te güncellenir. */
   likeCount?: number;
+  /** Check-in'de etiketlenen, paylaşanın takip ettiği kişiler. */
+  taggedUserIds?: string[];
   createdAt: FirestoreTimestamp | null;
 };
 
@@ -101,6 +103,49 @@ export type Report = {
   reporterId: string;
   checkInId: string;
   reason: ReportReason;
+  createdAt: FirestoreTimestamp | null;
+};
+
+/**
+ * suggested_locations/{id} — kullanıcıların önerdiği mekanlar. Oylar
+ * suggested_locations/{id}/votes/{uid} altında; voteCount aynı batch'te güncellenir.
+ */
+export type SuggestedLocation = {
+  userId: string;
+  userName: string;
+  name: string;
+  district: string;
+  category: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected';
+  voteCount: number;
+  createdAt: FirestoreTimestamp | null;
+};
+
+export type NotificationType = 'follow' | 'tag' | 'suggestion_approved' | 'suggestion_rejected';
+
+/**
+ * users/{uid}/notifications/{id} — yalnızca sahibi okur. id tekrarı önler:
+ * follow_{actorId}, tag_{checkInId}, suggestion_{suggestionId}.
+ */
+export type AppNotification = {
+  type: NotificationType;
+  actorId: string;
+  actorName: string;
+  /** tag: check-in id, suggestion_*: öneri id, follow: boş. */
+  targetId: string;
+  /** tag: mekan adı, suggestion_*: önerilen mekanın adı, follow: boş. */
+  targetName: string;
+  read: boolean;
+  createdAt: FirestoreTimestamp | null;
+};
+
+/** announcements/{id} — admin'in sponsorlu mekan duyurusu; bütün üyeler görür. */
+export type Announcement = {
+  title: string;
+  body: string;
+  locationId: string;
+  locationName: string;
   createdAt: FirestoreTimestamp | null;
 };
 

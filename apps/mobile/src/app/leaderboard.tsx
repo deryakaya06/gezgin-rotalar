@@ -13,6 +13,7 @@ import { FadeInItem } from '@/components/ui/motion';
 import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function LeaderboardScreen() {
@@ -20,6 +21,7 @@ export default function LeaderboardScreen() {
   const theme = useTheme();
   const { user } = useAuth();
   const currentUserId = user?.uid ?? null;
+  const { blockedIds } = useBlockedUsers();
   const [users, setUsers] = useState<WithId<UserProfile>[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +57,7 @@ export default function LeaderboardScreen() {
         </ThemedText>
 
         <FlatList
-          data={users}
+          data={users.filter((item) => !blockedIds.has(item.id))}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => {

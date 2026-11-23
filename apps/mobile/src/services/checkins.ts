@@ -30,7 +30,9 @@ export async function createCheckIn(
   uid: string,
   location: { id: string; name: string },
   note: string,
-  photoUrl?: string
+  photoUrl?: string,
+  /** Etiketlenen kişiler; her birine aynı batch'te bildirim gider. */
+  tags?: { actorName: string; userIds: string[] }
 ) {
   const visitRef = doc(db, COLLECTIONS.users, uid, 'visits', location.id);
   const visit = await getDoc(visitRef);
@@ -50,6 +52,7 @@ export async function createCheckIn(
     points,
     createdAt: serverTimestamp(),
     ...(photoUrl ? { photoUrl } : {}),
+    ...(tags?.userIds.length ? { taggedUserIds: tags.userIds } : {}),
   });
   batch.update(doc(db, COLLECTIONS.users, uid), {
     totalPoints: increment(points),
@@ -58,6 +61,18 @@ export async function createCheckIn(
   });
   if (points > 0) {
     batch.set(visitRef, { lastAwardedAt: serverTimestamp(), checkInId: checkInRef.id });
+  }
+
+  for (const taggedId of tags?.userIds ?? []) {
+    batch.set(doc(db, COLLECTIONS.users, taggedId, 'notifications', `tag_${checkInRef.id}`), {
+      type: 'tag',
+      actorId: uid,
+      actorName: tags!.actorName,
+      targetId: checkInRef.id,
+      targetName: location.name,
+      read: false,
+      createdAt: serverTimestamp(),
+    });
   }
 
   await batch.commit();

@@ -5,6 +5,7 @@ export const COLLECTIONS = {
   plannedTrips: 'planned_trips',
   suggestedLocations: 'suggested_locations',
   reports: 'reports',
+  announcements: 'announcements',
 } as const;
 
 /** firestore.rules içindeki pointsPerCheckIn() ile aynı olmalı. */
@@ -13,6 +14,9 @@ export const POINTS_PER_CHECKIN = 10;
 /** Aynı mekana bu süre içinde yapılan ikinci check-in puan kazandırmaz (firestore.rules uygular). */
 export const DUPLICATE_CHECKIN_WINDOW_HOURS = 24;
 
+/** Mekan kategorileri; öneri kuralı için firestore.rules içindeki listeyle aynı olmalı. */
+export const LOCATION_CATEGORIES = ['Tarihi', 'Müze', 'Park', 'Manzara', 'Çarşı', 'Sokak', 'Ada', 'Lezzet'] as const;
+
 /** Şikâyet nedenleri; anahtarlar firestore.rules içindeki listeyle aynı olmalı. */
 export const REPORT_REASONS = {
   spam: 'Spam',
@@ -20,6 +24,9 @@ export const REPORT_REASONS = {
   fake: 'Yanıltıcı veya sahte',
   other: 'Diğer',
 } as const;
+
+/** Bir check-in'de etiketlenebilecek en fazla kişi; firestore.rules aynı sınırı uygular. */
+export const MAX_CHECKIN_TAGS = 5;
 
 /** Bir gezi planındaki en fazla durak; firestore.rules aynı sınırı uygular. */
 export const MAX_TRIP_STOPS = 10;

@@ -696,3 +696,293 @@ describe('şikâyet ve moderasyon', () => {
     await assert.rejects(removeBatch(alice, bob.uid, lastCheckInId, POINTS));
   });
 });
+
+describe('mekan önerileri ve oylama', () => {
+  const suggestion = (user, name, overrides = {}) => ({
+    userId: user.uid,
+    userName: name,
+    name: 'Kuzguncuk Bostanı',
+    district: 'Üsküdar',
+    category: 'Park',
+    description: 'Mahalle bostanı',
+    status: 'pending',
+    voteCount: 0,
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+
+  async function suggest(user, name) {
+    const ref = doc(collection(user.db, 'suggested_locations'));
+    await setDoc(ref, suggestion(user, name));
+    return ref.id;
+  }
+
+  /** apps/mobile/src/services/suggestions.ts ile aynı batch; overrides ile hile denenir. */
+  function voteBatch(user, id, { remove = false, delta = remove ? -1 : 1, writeVote = true, writeCount = true } = {}) {
+    const batch = writeBatch(user.db);
+    const voteRef = doc(user.db, 'suggested_locations', id, 'votes', user.uid);
+    if (writeVote) remove ? batch.delete(voteRef) : batch.set(voteRef, { createdAt: serverTimestamp() });
+    if (writeCount) batch.update(doc(user.db, 'suggested_locations', id), { voteCount: increment(delta) });
+    return batch.commit();
+  }
+
+  const votes = async (user, id) =>
+    (await getDoc(doc(user.db, 'suggested_locations', id))).data().voteCount;
+
+  test('kullanıcı öneri oluşturur, başkaları okuyabilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await suggest(bob, 'bob');
+    assert.equal((await getDoc(doc(alice.db, 'suggested_locations', id))).data().name, 'Kuzguncuk Bostanı');
+  });
+
+  test('geçersiz veya hileli öneri reddedilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const ref = () => doc(collection(bob.db, 'suggested_locations'));
+    await assert.rejects(setDoc(ref(), suggestion(alice, 'alice')), 'başkası adına');
+    await assert.rejects(setDoc(ref(), suggestion(bob, 'sahte ad')), 'yanlış ad');
+    await assert.rejects(setDoc(ref(), suggestion(bob, 'bob', { voteCount: 50 })), 'hazır oy');
+    await assert.rejects(setDoc(ref(), suggestion(bob, 'bob', { status: 'approved' })), 'kendi onayı');
+    await assert.rejects(setDoc(ref(), suggestion(bob, 'bob', { category: 'Yok' })), 'kategori');
+    await assert.rejects(setDoc(ref(), suggestion(bob, 'bob', { name: 'x' })), 'kısa ad');
+  });
+
+  test('oy ver ve geri al sayacı birlikte günceller', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await suggest(bob, 'bob');
+    await voteBatch(alice, id);
+    assert.equal(await votes(alice, id), 1);
+    await voteBatch(alice, id, { remove: true });
+    assert.equal(await votes(alice, id), 0);
+  });
+
+  test('iki kez, kendi önerisine veya sayaç şişirerek oy verilemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await suggest(bob, 'bob');
+    await assert.rejects(voteBatch(bob, id), 'kendi önerisi');
+    await assert.rejects(voteBatch(alice, id, { delta: 5 }), 'fazla artış');
+    await assert.rejects(voteBatch(alice, id, { writeVote: false }), 'oysuz sayaç');
+    await assert.rejects(voteBatch(alice, id, { writeCount: false }), 'sayaçsız oy');
+    await voteBatch(alice, id);
+    await assert.rejects(voteBatch(alice, id), 'ikinci oy');
+  });
+
+  test('yalnızca sahibi bekleyen önerisini silebilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = await suggest(bob, 'bob');
+    await assert.rejects(writeBatch(alice.db).delete(doc(alice.db, 'suggested_locations', id)).commit());
+    await writeBatch(bob.db).delete(doc(bob.db, 'suggested_locations', id)).commit();
+  });
+});
+
+describe('kullanıcı engelleme', () => {
+  /** apps/mobile/src/services/blocks.ts ile aynı batch: engeller ve iki yöndeki takibi kaldırır. */
+  function blockBatch(me, targetUid) {
+    const batch = writeBatch(me.db);
+    batch.set(doc(me.db, 'users', me.uid, 'blocked', targetUid), { createdAt: serverTimestamp() });
+    batch.delete(doc(me.db, 'users', me.uid, 'following', targetUid));
+    batch.delete(doc(me.db, 'users', targetUid, 'followers', me.uid));
+    batch.delete(doc(me.db, 'users', targetUid, 'following', me.uid));
+    batch.delete(doc(me.db, 'users', me.uid, 'followers', targetUid));
+    return batch.commit();
+  }
+
+  const unblock = (me, targetUid) =>
+    writeBatch(me.db).delete(doc(me.db, 'users', me.uid, 'blocked', targetUid)).commit();
+
+  const followerCount = async (user, uid) =>
+    (await getCountFromServer(collection(user.db, 'users', uid, 'followers'))).data().count;
+
+  test('engelleme iki yöndeki takibi kaldırır', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await followBatch(alice, bob.uid);
+    await followBatch(bob, alice.uid);
+    await blockBatch(bob, alice.uid);
+    assert.equal(await followerCount(bob, bob.uid), 0);
+    assert.equal(await followerCount(bob, alice.uid), 0);
+  });
+
+  test('engellenen kişi engelleyeni takip edemez, engel kalkınca edebilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await blockBatch(bob, alice.uid);
+    await assert.rejects(followBatch(alice, bob.uid), 'engellenen');
+    await assert.rejects(followBatch(bob, alice.uid), 'engelleyen');
+    await unblock(bob, alice.uid);
+    await followBatch(alice, bob.uid);
+  });
+
+  test('engel listesi özeldir; başkası adına ve kendini engelleme reddedilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await blockBatch(bob, alice.uid);
+    assert.equal((await getDoc(doc(bob.db, 'users', bob.uid, 'blocked', alice.uid))).exists(), true);
+    await assert.rejects(getDoc(doc(alice.db, 'users', bob.uid, 'blocked', alice.uid)));
+    await assert.rejects(unblock({ ...alice, uid: bob.uid }, alice.uid), 'başkasının engelini kaldırma');
+    await assert.rejects(setDoc(doc(alice.db, 'users', bob.uid, 'blocked', 'x'), { createdAt: serverTimestamp() }));
+    await assert.rejects(setDoc(doc(bob.db, 'users', bob.uid, 'blocked', bob.uid), { createdAt: serverTimestamp() }));
+  });
+
+  test('üçüncü kişi başkasının takip kaydını silemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const carol = await newUser('carol');
+    await followBatch(alice, bob.uid);
+    const batch = writeBatch(carol.db);
+    batch.delete(doc(carol.db, 'users', alice.uid, 'following', bob.uid));
+    batch.delete(doc(carol.db, 'users', bob.uid, 'followers', alice.uid));
+    await assert.rejects(batch.commit());
+  });
+});
+
+describe('bildirimler', () => {
+  const notification = (actor, actorName, overrides = {}) => ({
+    type: 'follow',
+    actorId: actor.uid,
+    actorName,
+    targetId: '',
+    targetName: '',
+    read: false,
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+  const inbox = (user, ownerUid, id) => doc(user.db, 'users', ownerUid, 'notifications', id);
+
+  /** apps/mobile/src/services/follows.ts ile aynı batch. */
+  function followWithNotice(me, name, targetUid) {
+    const batch = writeBatch(me.db);
+    batch.set(doc(me.db, 'users', me.uid, 'following', targetUid), { createdAt: serverTimestamp() });
+    batch.set(doc(me.db, 'users', targetUid, 'followers', me.uid), { createdAt: serverTimestamp() });
+    batch.set(inbox(me, targetUid, `follow_${me.uid}`), notification(me, name));
+    return batch.commit();
+  }
+
+  function unfollowWithNotice(me, targetUid) {
+    const batch = writeBatch(me.db);
+    batch.delete(doc(me.db, 'users', me.uid, 'following', targetUid));
+    batch.delete(doc(me.db, 'users', targetUid, 'followers', me.uid));
+    batch.delete(inbox(me, targetUid, `follow_${me.uid}`));
+    return batch.commit();
+  }
+
+  /** apps/mobile/src/services/checkins.ts ile aynı batch. */
+  function taggedCheckIn(user, name, taggedIds, { notify = taggedIds, points = 0 } = {}) {
+    const ref = doc(collection(user.db, 'check_ins'));
+    const batch = writeBatch(user.db);
+    batch.set(ref, {
+      userId: user.uid, locationId: 'galata', locationName: 'Galata Kulesi', note: '', points,
+      taggedUserIds: taggedIds, createdAt: serverTimestamp(),
+    });
+    batch.update(doc(user.db, 'users', user.uid), {
+      totalPoints: increment(points), visitCount: increment(1), lastCheckInId: ref.id,
+    });
+    if (points > 0) {
+      batch.set(doc(user.db, 'users', user.uid, 'visits', 'galata'), {
+        lastAwardedAt: serverTimestamp(),
+        checkInId: ref.id,
+      });
+    }
+    for (const id of notify) {
+      batch.set(inbox(user, id, `tag_${ref.id}`), notification(user, name, {
+        type: 'tag', targetId: ref.id, targetName: 'Galata Kulesi',
+      }));
+    }
+    return batch.commit();
+  }
+
+  async function newAdmin() {
+    const admin = await newUser('admin');
+    await adminSet(`users/${admin.uid}`, {
+      displayName: 'admin', accountType: 'friends', totalPoints: 0, visitCount: 0, role: 'admin',
+    });
+    return admin;
+  }
+
+  test('takip bildirimi yazılır, yalnızca sahibi okur, takip bırakılınca kalkar, tekrar takip olur', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await followWithNotice(alice, 'alice', bob.uid);
+    const id = `follow_${alice.uid}`;
+    assert.equal((await getDoc(inbox(bob, bob.uid, id))).data().actorName, 'alice');
+    await assert.rejects(getDoc(inbox(alice, bob.uid, id)));
+    await unfollowWithNotice(alice, bob.uid);
+    assert.equal((await getDoc(inbox(bob, bob.uid, id))).exists(), false);
+    await followWithNotice(alice, 'alice', bob.uid);
+  });
+
+  test('sahte bildirim yazılamaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const id = `follow_${alice.uid}`;
+    await assert.rejects(setDoc(inbox(alice, bob.uid, id), notification(alice, 'alice')), 'takip etmeden');
+    await assert.rejects(followWithNotice(alice, 'sahte ad', bob.uid), 'yanlış ad');
+    await assert.rejects(setDoc(inbox(alice, bob.uid, 'suggestion_x'), notification(alice, 'alice', {
+      type: 'suggestion_approved', targetId: 'x', targetName: 'x',
+    })), 'admin olmadan onay');
+  });
+
+  test('sahibi okundu yapar, başka alanı değiştiremez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await followWithNotice(alice, 'alice', bob.uid);
+    const ref = inbox(bob, bob.uid, `follow_${alice.uid}`);
+    await assert.rejects(updateDoc(ref, { actorName: 'değişti' }));
+    await updateDoc(ref, { read: true });
+  });
+
+  test('takip edilen 5 kişi etiketlenir; takip edilmeyen veya 6. kişi reddedilir', async () => {
+    const bob = await newUser('bob');
+    const friends = [];
+    for (let i = 0; i < 5; i++) {
+      const friend = await newUser(`arkadas${i}`);
+      await followBatch(bob, friend.uid);
+      friends.push(friend.uid);
+    }
+    const stranger = await newUser('yabanci');
+    // Puanlı check-in en çok kural okuması yapan durum; Firestore'un istek sınırına takılmamalı.
+    await taggedCheckIn(bob, 'bob', friends, { points: POINTS });
+    await assert.rejects(taggedCheckIn(bob, 'bob', [stranger.uid]), 'takip edilmeyen');
+    await assert.rejects(taggedCheckIn(bob, 'bob', [...friends, stranger.uid], { notify: [] }), '6 kişi');
+  });
+
+  test('admin öneriyi onaylar ve sahibine bildirim gider; normal kullanıcı onaylayamaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const admin = await newAdmin();
+    const ref = doc(collection(bob.db, 'suggested_locations'));
+    await setDoc(ref, {
+      userId: bob.uid, userName: 'bob', name: 'Bostan', district: 'Üsküdar', category: 'Park',
+      description: '', status: 'pending', voteCount: 0, createdAt: serverTimestamp(),
+    });
+    await assert.rejects(updateDoc(doc(alice.db, 'suggested_locations', ref.id), { status: 'approved' }));
+
+    const batch = writeBatch(admin.db);
+    batch.update(doc(admin.db, 'suggested_locations', ref.id), { status: 'approved' });
+    batch.set(inbox(admin, bob.uid, `suggestion_${ref.id}`), notification(admin, 'admin', {
+      type: 'suggestion_approved', targetId: ref.id, targetName: 'Bostan',
+    }));
+    await batch.commit();
+    assert.equal((await getDoc(inbox(bob, bob.uid, `suggestion_${ref.id}`))).data().type, 'suggestion_approved');
+  });
+
+  test('duyuruyu yalnızca admin sponsorlu mekan için yazar, herkes okur', async () => {
+    const bob = await newUser('bob');
+    const admin = await newAdmin();
+    await adminSet('locations/sponsorlu', { name: 'Sponsor Kafe', description: 'x' });
+    const announcement = (overrides = {}) => ({
+      title: 'Kampanya', body: 'Bu hafta indirim', locationId: 'sponsorlu', locationName: 'Sponsor Kafe',
+      createdAt: serverTimestamp(), ...overrides,
+    });
+    await assert.rejects(setDoc(doc(collection(admin.db, 'announcements')), announcement()), 'sponsorlu değil');
+    await updateDoc(doc(admin.db, 'locations', 'sponsorlu'), { isSponsored: true });
+    const ref = doc(collection(admin.db, 'announcements'));
+    await setDoc(ref, announcement());
+    assert.equal((await getDoc(doc(bob.db, 'announcements', ref.id))).data().title, 'Kampanya');
+    await assert.rejects(setDoc(doc(collection(bob.db, 'announcements')), announcement()), 'normal kullanıcı');
+  });
+});

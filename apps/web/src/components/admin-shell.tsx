@@ -46,7 +46,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <nav className={styles.nav} aria-label="Yönetim bölümleri">
             <Link href="/">Mekanlar</Link>
             <Link href="/reports">Şikâyetler</Link>
+            <Link href="/suggestions">Öneriler</Link>
             <Link href="/sponsors">Sponsor İstatistikleri</Link>
+            <Link href="/announcements">Duyurular</Link>
           </nav>
           <div className={styles.user}>
             <span className="muted">{state.displayName}</span>

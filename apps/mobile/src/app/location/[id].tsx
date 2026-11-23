@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -13,8 +13,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router';
 import {
   DUPLICATE_CHECKIN_WINDOW_HOURS,
+  MAX_CHECKIN_TAGS,
   POINTS_PER_CHECKIN,
   type Location,
+  type UserProfile,
   type WithId,
 } from '@repo/shared';
 
@@ -25,6 +27,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
 import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
 import { ContentColumn, OnPhoto, Radius, Spacing } from '@/constants/theme';
@@ -33,6 +36,7 @@ import { useScrollToInput } from '@/hooks/use-scroll-to-input';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
+import { fetchFollowList } from '@/services/users';
 import {
   isPhotoUploadConfigured,
   photoThumbnail,
@@ -42,7 +46,7 @@ import {
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const theme = useTheme();
   const { scrollRef, inputProps } = useScrollToInput();
 
@@ -68,6 +72,8 @@ export default function LocationDetailScreen() {
   const [message, setMessage] = useState('');
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [saving, setSaving] = useState<false | 'uploading' | 'saving'>(false);
+  const [following, setFollowing] = useState<WithId<UserProfile>[]>([]);
+  const [taggedIds, setTaggedIds] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +92,24 @@ export default function LocationDetailScreen() {
     };
   }, [id]);
 
+  const uid = user?.uid;
+  useEffect(() => {
+    if (!uid) return;
+    fetchFollowList(uid, 'following')
+      .then(setFollowing)
+      .catch((error) => console.log('Takip listesi alınamadı:', error.message));
+  }, [uid]);
+
+  function toggleTag(personId: string) {
+    setTaggedIds((prev) =>
+      prev.includes(personId)
+        ? prev.filter((value) => value !== personId)
+        : prev.length < MAX_CHECKIN_TAGS
+          ? [...prev, personId]
+          : prev
+    );
+  }
+
   async function handleCheckIn() {
     if (!user || !location) return;
 
@@ -103,7 +127,13 @@ export default function LocationDetailScreen() {
     }
 
     setSaving('saving');
-    createCheckIn(user.uid, { id: location.id, name: location.name }, note.trim(), photoUrl)
+    createCheckIn(
+      user.uid,
+      { id: location.id, name: location.name },
+      note.trim(),
+      photoUrl,
+      profile ? { actorName: profile.displayName, userIds: taggedIds } : undefined
+    )
       .then((points) => {
         setMessage(
           points > 0
@@ -112,6 +142,7 @@ export default function LocationDetailScreen() {
         );
         setNote('');
         setPhoto(null);
+        setTaggedIds([]);
       })
       .catch((error) => {
         setMessage('Hata: ' + error.message);
@@ -251,6 +282,23 @@ export default function LocationDetailScreen() {
                 multiline
                 {...inputProps}
               />
+              {following.length > 0 ? (
+                <>
+                  <ThemedText type="smallBold">
+                    Birlikte gittiklerin ({taggedIds.length}/{MAX_CHECKIN_TAGS})
+                  </ThemedText>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagChips}>
+                    {following.map((person) => (
+                      <Chip
+                        key={person.id}
+                        label={person.displayName}
+                        selected={taggedIds.includes(person.id)}
+                        onPress={() => toggleTag(person.id)}
+                      />
+                    ))}
+                  </ScrollView>
+                </>
+              ) : null}
               <Button
                 title={
                   saving === 'uploading'
@@ -303,6 +351,7 @@ const styles = StyleSheet.create({
   sponsorCard: { gap: Spacing.one },
   map: { height: 180 },
   checkIn: { gap: Spacing.two, marginTop: Spacing.three },
+  tagChips: { gap: Spacing.two },
   noteInput: { minHeight: 96, textAlignVertical: 'top' },
   centered: { textAlign: 'center' },
 });

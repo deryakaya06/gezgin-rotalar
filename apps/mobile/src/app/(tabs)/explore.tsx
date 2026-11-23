@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { LocationMap } from '@/components/location-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { FadeInItem, PressableScale } from '@/components/ui/motion';
 import { TextField } from '@/components/ui/text-field';
@@ -93,6 +94,13 @@ export default function ExploreScreen() {
           ))}
         </ScrollView>
       )}
+
+      <Button
+        title="Mekan Öner ve Oyla"
+        variant="outline"
+        size="small"
+        onPress={() => router.push('/suggestions')}
+      />
 
       <ThemedText type="caption" themeColor="textSecondary">
         {loading ? 'Yükleniyor...' : `${visible.length} mekan`}

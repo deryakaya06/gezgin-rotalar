@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { COLLECTIONS, type CheckIn, type UserProfile, type WithId } from '@repo/shared';
 
+import { BlockButton } from '@/components/block-button';
 import { FollowButton } from '@/components/follow-button';
 import { ProfileSummary } from '@/components/profile-summary';
 import { CheckInPhoto } from '@/components/check-in-photo';
@@ -23,6 +24,7 @@ import { BackButton } from '@/components/ui/back-button';
 import { Card } from '@/components/ui/card';
 import { ContentColumn, Spacing } from '@/constants/theme';
 import { db } from '@/firebase';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 import { useFollow } from '@/hooks/use-follow';
 import { formatDate } from '@/utils/format';
 
@@ -32,6 +34,8 @@ export default function UserProfileScreen() {
   const [notFound, setNotFound] = useState(false);
   const [checkIns, setCheckIns] = useState<WithId<CheckIn>[]>([]);
   const { isFollowing } = useFollow(id);
+  const { blockedIds } = useBlockedUsers();
+  const blocked = blockedIds.has(id);
 
   useEffect(() => {
     if (!id) return;
@@ -70,7 +74,7 @@ export default function UserProfileScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <FlatList
-          data={checkIns}
+          data={blocked ? [] : checkIns}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
@@ -83,12 +87,13 @@ export default function UserProfileScreen() {
                 </ThemedText>
               ) : (
                 <>
-                  <ProfileSummary uid={id} profile={profile} followRefreshKey={isFollowing}>
+                  <ProfileSummary uid={id} profile={profile} followRefreshKey={`${isFollowing}-${blocked}`}>
                     <View style={styles.followButtonWrap}>
-                      <FollowButton userId={id} large />
+                      {blocked ? null : <FollowButton userId={id} large />}
+                      <BlockButton userId={id} name={profile?.displayName ?? 'Bu kullanıcı'} blocked={blocked} />
                     </View>
                   </ProfileSummary>
-                  <ThemedText type="defaultSemiBold">{"Son Check-in'ler"}</ThemedText>
+                  {blocked ? null : <ThemedText type="defaultSemiBold">{"Son Check-in'ler"}</ThemedText>}
                 </>
               )}
             </View>
@@ -106,7 +111,7 @@ export default function UserProfileScreen() {
           ListEmptyComponent={
             notFound ? undefined : (
               <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                Henüz check-in yok.
+                {blocked ? 'Bu kullanıcıyı engelledin.' : 'Henüz check-in yok.'}
               </ThemedText>
             )
           }

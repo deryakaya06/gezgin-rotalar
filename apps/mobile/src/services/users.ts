@@ -82,6 +82,25 @@ export function syncSearchName(uid: string, profile: UserProfile) {
   return updateDoc(doc(db, COLLECTIONS.users, uid), { searchName: expected });
 }
 
+/** Ayarlar'dan görünen adı ve hesap türünü değiştirir; arama alanı adla birlikte güncellenir. */
+export function updateUserProfile(
+  uid: string,
+  data: { displayName: string; accountType: AccountType }
+) {
+  return updateDoc(doc(db, COLLECTIONS.users, uid), {
+    ...data,
+    searchName: searchKey(data.displayName),
+  });
+}
+
+/** Verilen id'lerdeki kullanıcıların profilleri; silinmiş olanlar atlanır. */
+export async function fetchUsers(ids: string[]): Promise<WithId<UserProfile>[]> {
+  const profiles = await Promise.all(ids.map((id) => getDoc(doc(db, COLLECTIONS.users, id))));
+  return profiles
+    .filter((p) => p.exists())
+    .map((p) => ({ id: p.id, ...(p.data() as UserProfile) }));
+}
+
 /** Görünen adı aranan metinle başlayan kullanıcılar (en fazla 20). */
 export async function searchUsers(text: string): Promise<WithId<UserProfile>[]> {
   const q = searchKey(text);

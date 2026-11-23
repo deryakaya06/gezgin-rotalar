@@ -7,11 +7,11 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { CLOUDINARY, COLLECTIONS, type Location, type WithId } from '@repo/shared';
+import { CLOUDINARY, COLLECTIONS, LOCATION_CATEGORIES, type Location, type WithId } from '@repo/shared';
 
 import { db } from '@/lib/firebase';
 
-export const CATEGORIES = ['Tarihi', 'Müze', 'Park', 'Manzara', 'Çarşı', 'Sokak', 'Ada', 'Lezzet'];
+export const CATEGORIES: readonly string[] = LOCATION_CATEGORIES;
 
 /** Mobil uygulamada eksik görünmemesi için bir mekanda bulunması gereken alanlar. */
 export const RECOMMENDED_FIELDS = ['district', 'category', 'coordinates', 'coverPhotoUrl'] as const;

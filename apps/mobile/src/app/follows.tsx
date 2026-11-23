@@ -11,6 +11,7 @@ import { Chip } from '@/components/ui/chip';
 import { FadeInItem } from '@/components/ui/motion';
 import { UserRow } from '@/components/user-row';
 import { ContentColumn, Spacing } from '@/constants/theme';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 import { fetchFollowList } from '@/services/users';
 
 type ListType = 'followers' | 'following';
@@ -18,6 +19,7 @@ type ListType = 'followers' | 'following';
 /** /follows?uid=...&type=followers|following — bir kullanıcının takipçileri veya takip ettikleri. */
 export default function FollowsScreen() {
   const router = useRouter();
+  const { blockedIds } = useBlockedUsers();
   const params = useLocalSearchParams<{ uid: string; type?: ListType; name?: string }>();
   const type: ListType = params.type === 'following' ? 'following' : 'followers';
   const [users, setUsers] = useState<WithId<UserProfile>[] | null>(null);
@@ -54,7 +56,7 @@ export default function FollowsScreen() {
           <Chip label="Takip Edilenler" selected={type === 'following'} onPress={() => switchTo('following')} />
         </View>
         <FlatList
-          data={users ?? []}
+          data={(users ?? []).filter((item) => !blockedIds.has(item.id))}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => (

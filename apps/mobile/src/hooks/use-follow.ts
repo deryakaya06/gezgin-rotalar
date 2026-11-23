@@ -8,7 +8,7 @@ import { followUser, unfollowUser } from '@/services/follows';
 
 /** Giriş yapmış kullanıcının targetId'yi takip edip etmediğini canlı izler. */
 export function useFollow(targetId: string | undefined) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const me = user?.uid;
   const [isFollowing, setIsFollowing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -27,10 +27,12 @@ export function useFollow(targetId: string | undefined) {
   }, [me, targetId]);
 
   function toggle() {
-    if (!me || !targetId || busy) return;
+    if (!me || !targetId || !profile || busy) return;
     setBusy(true);
-    const action = isFollowing ? unfollowUser : followUser;
-    action(me, targetId)
+    const action = isFollowing
+      ? unfollowUser(me, targetId)
+      : followUser(me, targetId, profile.displayName);
+    action
       .catch((error) => {
         console.log('Takip işlemi başarısız:', error.message);
       })
