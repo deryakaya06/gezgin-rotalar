@@ -20,6 +20,10 @@ export type UserProfile = {
   createdAt: FirestoreTimestamp | null;
   /** Son check-in'in id'si; kuralların puan artışını doğrulaması için. */
   lastCheckInId?: string;
+  /** searchKey(displayName); kullanıcı araması için. */
+  searchName?: string;
+  /** Cloudinary'deki profil fotoğrafı; yoksa hesap türü emojisi gösterilir. */
+  photoUrl?: string;
 };
 
 /** users/{uid}/visits/{locationId} — mekandan en son puan alınan zaman. */
@@ -73,6 +77,30 @@ export type CheckIn = {
   points: number;
   /** Cloudinary'deki fotoğrafın adresi (https://res.cloudinary.com/...). */
   photoUrl?: string;
+  /** Beğeni sayısı; check_ins/{id}/likes alt koleksiyonuyla aynı batch'te güncellenir. */
+  likeCount?: number;
+  createdAt: FirestoreTimestamp | null;
+};
+
+/** planned_trips/{id} — yalnızca sahibi görür. date "2026-11-23" biçiminde. */
+export type PlannedTrip = {
+  userId: string;
+  title: string;
+  date: string;
+  /** Duraklar gidiş sırasında. */
+  locationIds: string[];
+  locationNames: string[];
+  note: string;
+  createdAt: FirestoreTimestamp | null;
+};
+
+export type ReportReason = 'spam' | 'inappropriate' | 'fake' | 'other';
+
+/** reports/{checkInId}_{reporterId} — kişi başına bir şikâyet; yalnızca admin okur. */
+export type Report = {
+  reporterId: string;
+  checkInId: string;
+  reason: ReportReason;
   createdAt: FirestoreTimestamp | null;
 };
 

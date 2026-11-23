@@ -6,7 +6,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 type ButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   title: string;
-  /** primary: dolu turuncu, outline: çerçeveli. */
+  /** primary: dolu pudra pembe (ana eylem), outline: adaçayı yeşili çerçeveli. */
   variant?: 'primary' | 'outline';
   size?: 'small' | 'large';
   style?: StyleProp<ViewStyle>;
@@ -31,8 +31,8 @@ export function Button({
         styles.base,
         size === 'small' ? styles.small : styles.large,
         {
-          borderColor: theme.primary,
-          backgroundColor: filled ? theme.primary : 'transparent',
+          borderColor: filled ? theme.cta : theme.primary,
+          backgroundColor: filled ? theme.cta : 'transparent',
         },
         (pressed || disabled) && styles.dimmed,
         style,
@@ -41,7 +41,7 @@ export function Button({
     >
       <ThemedText
         type={size === 'small' ? 'caption' : 'smallBold'}
-        style={[styles.text, { color: filled ? theme.onPrimary : theme.primary }]}
+        style={[styles.text, { color: filled ? theme.onCta : theme.primary }]}
       >
         {title}
       </ThemedText>
@@ -56,15 +56,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   large: {
-    borderRadius: Radius.medium,
+    borderRadius: Radius.pill,
     paddingVertical: 14,
     paddingHorizontal: Spacing.four,
   },
   small: {
-    borderRadius: Radius.small,
+    borderRadius: Radius.pill,
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
-  text: { fontWeight: 700 },
+  text: { fontWeight: 600, letterSpacing: 0.3 },
   dimmed: { opacity: 0.6 },
 });

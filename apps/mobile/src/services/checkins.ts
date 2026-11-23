@@ -1,9 +1,22 @@
-import { collection, doc, getDoc, increment, serverTimestamp, writeBatch } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  increment,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
 import {
   COLLECTIONS,
   DUPLICATE_CHECKIN_WINDOW_HOURS,
   POINTS_PER_CHECKIN,
+  type CheckIn,
   type Visit,
+  type WithId,
 } from '@repo/shared';
 
 import { db } from '@/firebase';
@@ -49,4 +62,35 @@ export async function createCheckIn(
 
   await batch.commit();
   return points;
+}
+
+/**
+ * Kendi check-in'ini siler; aynı batch'te kazanılan puan ve ziyaret geri alınır.
+ * firestore.rules miktarların doğruluğunu denetler. visits kaydı silinmez; böylece
+ * silip tekrar check-in yapmak 24 saat içinde yeniden puan getirmez.
+ */
+export function deleteCheckIn(uid: string, checkIn: { id: string; points?: number }) {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, COLLECTIONS.checkIns, checkIn.id));
+  batch.update(doc(db, COLLECTIONS.users, uid), {
+    totalPoints: increment(-(checkIn.points ?? 0)),
+    visitCount: increment(-1),
+    lastDeletedCheckInId: checkIn.id,
+  });
+  return batch.commit();
+}
+
+/** Bir kullanıcının verilen gündeki ("2026-11-23", cihaz saatine göre) check-in'leri. */
+export async function fetchDayCheckIns(uid: string, day: string): Promise<WithId<CheckIn>[]> {
+  const [year, month, date] = day.split('-').map(Number);
+  const snapshot = await getDocs(
+    query(
+      collection(db, COLLECTIONS.checkIns),
+      where('userId', '==', uid),
+      where('createdAt', '>=', new Date(year, month - 1, date)),
+      where('createdAt', '<', new Date(year, month - 1, date + 1)),
+      orderBy('createdAt', 'desc')
+    )
+  );
+  return snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as CheckIn) }));
 }

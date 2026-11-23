@@ -9,7 +9,8 @@ import { FollowButton } from '@/components/follow-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/back-button';
-import { Radius, Spacing } from '@/constants/theme';
+import { FadeInItem } from '@/components/ui/motion';
+import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
@@ -59,39 +60,45 @@ export default function LeaderboardScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => {
             const isMe = item.id === currentUserId;
+            // Profili açan alan ile takip butonu kardeş öğeler: web'de düğme içinde düğme olamaz.
             return (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.row,
-                  isMe
-                    ? { borderColor: theme.primary, backgroundColor: theme.primarySoft, borderWidth: 2 }
-                    : { borderColor: theme.border },
-                  pressed && styles.pressed,
-                ]}
-                onPress={() =>
-                  isMe
-                    ? router.navigate('/(tabs)/profile')
-                    : router.push({ pathname: '/user/[id]', params: { id: item.id } })
-                }
-              >
-                <ThemedText type="defaultSemiBold" style={styles.rank}>
-                  #{index + 1}
-                </ThemedText>
-                <View style={styles.rowContent}>
-                  <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                    {item.displayName} {isMe ? '(Sen)' : ''}
-                  </ThemedText>
-                  <ThemedText type="caption" themeColor="textSecondary">
-                    {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
-                  </ThemedText>
-                </View>
-                <View style={styles.rowEnd}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    {item.totalPoints} puan
-                  </ThemedText>
+              <FadeInItem index={index}>
+                <View
+                  style={[
+                    styles.row,
+                    isMe
+                      ? { borderColor: theme.highlight, backgroundColor: theme.highlightSoft, borderWidth: 1 }
+                      : { borderColor: theme.border, backgroundColor: theme.surface },
+                  ]}
+                >
+                  <Pressable
+                    style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+                    onPress={() =>
+                      isMe
+                        ? router.navigate('/(tabs)/profile')
+                        : router.push({ pathname: '/user/[id]', params: { id: item.id } })
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`${index + 1}. sıra, ${item.displayName}, ${item.totalPoints} puan`}
+                  >
+                    <ThemedText type="defaultSemiBold" style={styles.rank}>
+                      #{index + 1}
+                    </ThemedText>
+                    <View style={styles.rowContent}>
+                      <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                        {item.displayName} {isMe ? '(Sen)' : ''}
+                      </ThemedText>
+                      <ThemedText type="caption" themeColor="textSecondary">
+                        {item.accountType === 'couple' ? 'Çift Hesabı' : 'Arkadaş Hesabı'}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                      {item.totalPoints} puan
+                    </ThemedText>
+                  </Pressable>
                   <FollowButton userId={item.id} />
                 </View>
-              </Pressable>
+              </FadeInItem>
             );
           }}
           ListEmptyComponent={
@@ -108,6 +115,7 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
+    ...ContentColumn,
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
@@ -118,7 +126,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.three,
@@ -126,6 +134,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   rank: { width: 36 },
   rowContent: { flex: 1 },
-  rowEnd: { alignItems: 'flex-end', gap: Spacing.one },
+  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

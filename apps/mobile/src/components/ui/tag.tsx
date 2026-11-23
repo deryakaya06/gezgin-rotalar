@@ -26,9 +26,9 @@ export function Tag({ label, tone = 'primary' }: { label: string; tone?: keyof t
 const styles = StyleSheet.create({
   tag: {
     alignSelf: 'flex-start',
-    borderRadius: Radius.small,
+    borderRadius: Radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  text: { fontWeight: 700 },
+  text: { fontWeight: 600, letterSpacing: 0.2 },
 });

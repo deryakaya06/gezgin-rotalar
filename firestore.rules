@@ -35,6 +35,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(uid)/followers/$(followerId);
     }
 
+    function likePath(checkInId, uid) {
+      return /databases/$(database)/documents/check_ins/$(checkInId)/likes/$(uid);
+    }
+
     function visitPath(uid, locationId) {
       return /databases/$(database)/documents/users/$(uid)/visits/$(locationId);
     }
@@ -93,7 +97,15 @@ service cloud.firestore {
       return data.displayName is string
         && data.displayName.size() >= 2
         && data.displayName.size() <= 40
-        && data.accountType in ['couple', 'friends'];
+        && data.accountType in ['couple', 'friends']
+        && validSearchName(data)
+        && (!('photoUrl' in data) || validPhotoUrl(data.photoUrl));
+    }
+
+    // Kullanıcı aramasında kullanılan sadeleştirilmiş ad (packages/shared searchKey).
+    function validSearchName(data) {
+      return !('searchName' in data)
+        || (data.searchName is string && data.searchName.size() <= 60);
     }
 
     // Bu batch'te oluşturulan check-in'e karşılık gelen puan/ziyaret artışı.
@@ -110,13 +122,27 @@ service cloud.firestore {
         && after.visitCount == resource.data.visitCount + 1;
     }
 
+    // Bu batch'te silinen kendi check-in'inin puanı ve ziyareti geri alınır.
+    function isCheckInDeletionUpdate(uid) {
+      let after = request.resource.data;
+      let id = after.lastDeletedCheckInId;
+      let checkIn = get(checkInPath(id)).data;
+      return after.diff(resource.data).affectedKeys().hasOnly(['totalPoints', 'visitCount', 'lastDeletedCheckInId'])
+        && id is string
+        && exists(checkInPath(id))
+        && !existsAfter(checkInPath(id))
+        && checkIn.userId == uid
+        && after.totalPoints == resource.data.totalPoints - checkIn.get('points', 0)
+        && after.visitCount == resource.data.visitCount - 1;
+    }
+
     // Eski şemadaki (points, email) profili bir kereye mahsus yeni şemaya taşıma.
     // Eski sürümde her check-in 10 puan verdiği için ziyaret sayısı puandan çıkarılır.
     function isLegacyMigration() {
       let after = request.resource.data;
       let legacyPoints = resource.data.get('points', 0);
       return !('totalPoints' in resource.data)
-        && after.keys().hasOnly(['displayName', 'accountType', 'totalPoints', 'visitCount', 'createdAt'])
+        && after.keys().hasOnly(['displayName', 'accountType', 'totalPoints', 'visitCount', 'createdAt', 'searchName'])
         && validProfileFields(after)
         && after.totalPoints == legacyPoints
         && after.visitCount == math.floor(legacyPoints / pointsPerCheckIn());
@@ -127,7 +153,7 @@ service cloud.firestore {
 
       allow create: if isOwner(uid)
         && request.resource.data.keys().hasOnly([
-          'displayName', 'accountType', 'totalPoints', 'visitCount', 'createdAt'
+          'displayName', 'accountType', 'totalPoints', 'visitCount', 'createdAt', 'searchName'
         ])
         && validProfileFields(request.resource.data)
         && request.resource.data.totalPoints == 0
@@ -136,12 +162,21 @@ service cloud.firestore {
 
       allow update: if isOwner(uid) && (
         (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'accountType'])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'accountType', 'searchName', 'photoUrl'])
           && validProfileFields(request.resource.data)
         )
         || isCheckInCounterUpdate(uid)
+        || isCheckInDeletionUpdate(uid)
         || isLegacyMigration()
-      );
+      )
+      // Admin, arama alanı eksik eski hesapları doldurabilir (scripts/backfill-search-names.mjs).
+      || (
+        isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['searchName'])
+        && validSearchName(request.resource.data)
+      )
+      // Admin, şikâyet edilen check-in'i kaldırırken sahibinin puanını geri alır.
+      || (isAdmin() && isCheckInDeletionUpdate(uid));
 
       allow delete: if false;
 
@@ -191,6 +226,47 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Gezi planları özeldir; yalnızca sahibi görür, oluşturur ve siler.
+    match /planned_trips/{tripId} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'userId', 'title', 'date', 'locationIds', 'locationNames', 'note', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'userId', 'title', 'date', 'locationIds', 'locationNames', 'note', 'createdAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 2
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && request.resource.data.locationIds is list
+        && request.resource.data.locationIds.size() >= 1
+        && request.resource.data.locationIds.size() <= 10
+        && request.resource.data.locationNames is list
+        && request.resource.data.locationNames.size() == request.resource.data.locationIds.size()
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 500
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // Kişi bir paylaşımı bir kez şikâyet eder (id: checkInId_uid); şikâyetleri yalnızca admin görür.
+    match /reports/{reportId} {
+      allow read, delete: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['reporterId', 'checkInId', 'reason', 'createdAt'])
+        && request.resource.data.keys().hasAll(['reporterId', 'checkInId', 'reason', 'createdAt'])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.checkInId is string
+        && reportId == request.resource.data.checkInId + '_' + request.auth.uid
+        && request.resource.data.reason in ['spam', 'inappropriate', 'fake', 'other']
+        && request.resource.data.createdAt == request.time
+        && exists(checkInPath(request.resource.data.checkInId))
+        && get(checkInPath(request.resource.data.checkInId)).data.userId != request.auth.uid;
+    }
+
     match /check_ins/{checkInId} {
       allow read: if signedIn();
 
@@ -218,8 +294,42 @@ service cloud.firestore {
         // Kullanıcının puan/ziyaret sayacı aynı batch'te artırılmalıdır.
         && getAfter(userPath(request.auth.uid)).data.lastCheckInId == checkInId;
 
-      // Silme puanı geri almayı gerektirir; moderasyon admin panelinden yapılacak.
-      allow update, delete: if false;
+      // Tek izin verilen değişiklik beğeni sayacı: yalnızca ±1 ve aynı batch'te
+      // isteği yapanın beğeni kaydı eklenmiş/silinmiş olmalı.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+        && (
+          (
+            request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1
+            && !exists(likePath(checkInId, request.auth.uid))
+            && existsAfter(likePath(checkInId, request.auth.uid))
+          )
+          || (
+            request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1
+            && exists(likePath(checkInId, request.auth.uid))
+            && !existsAfter(likePath(checkInId, request.auth.uid))
+          )
+        );
+
+      // Sahibi veya admin silebilir; aynı batch'te sahibinin puanı ve ziyaret sayısı
+      // geri alınmalıdır (users kuralındaki isCheckInDeletionUpdate).
+      allow delete: if signedIn()
+        && (resource.data.userId == request.auth.uid || isAdmin())
+        && getAfter(userPath(resource.data.userId)).data.get('lastDeletedCheckInId', '') == checkInId;
+
+      // check_ins/{id}/likes/{uid}: kullanıcı yalnızca kendi beğenisini ekler/siler;
+      // sayaç aynı batch'te güncellenmelidir.
+      match /likes/{likerId} {
+        allow read: if signedIn();
+        allow create: if isOwner(likerId)
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          && getAfter(checkInPath(checkInId)).data.likeCount
+               == get(checkInPath(checkInId)).data.get('likeCount', 0) + 1;
+        allow delete: if isOwner(likerId)
+          && getAfter(checkInPath(checkInId)).data.likeCount
+               == get(checkInPath(checkInId)).data.get('likeCount', 0) - 1;
+      }
     }
   }
 }

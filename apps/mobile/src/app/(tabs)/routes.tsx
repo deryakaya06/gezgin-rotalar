@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   collection,
   onSnapshot,
@@ -11,12 +12,14 @@ import {
 import { COLLECTIONS, type CheckIn, type WithId } from '@repo/shared';
 
 import { CheckInPhoto } from '@/components/check-in-photo';
+import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TileStripe } from '@/components/tile-stripe';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { FadeInItem } from '@/components/ui/motion';
 import { Tag } from '@/components/ui/tag';
-import { Radius, Spacing } from '@/constants/theme';
+import { ContentColumn, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { db } from '@/firebase';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,6 +28,7 @@ import { formatDate } from '@/utils/format';
 export default function RoutesScreen() {
   const { user } = useAuth();
   const theme = useTheme();
+  const router = useRouter();
   const [checkIns, setCheckIns] = useState<WithId<CheckIn>[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +63,6 @@ export default function RoutesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <TileStripe inset={Spacing.four} />
         <FlatList
           data={checkIns}
           keyExtractor={(item) => item.id}
@@ -89,29 +92,44 @@ export default function RoutesScreen() {
                 </Card>
               </View>
 
+              <Button
+                title="Takvimim ve Gün Rotaları"
+                variant="outline"
+                onPress={() => router.push('/calendar')}
+                style={styles.calendarButton}
+              />
+
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
                 {"Geçmiş Check-in'ler"}
               </ThemedText>
             </>
           }
-          renderItem={({ item }) => (
-            <Card style={styles.card}>
-              {item.photoUrl ? (
-                <CheckInPhoto url={item.photoUrl} size={240} style={styles.cardPhoto} />
-              ) : (
-                <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
-                  <ThemedText style={styles.cardEmoji}>📍</ThemedText>
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index}>
+              <Card style={styles.card}>
+                {item.photoUrl ? (
+                  <CheckInPhoto url={item.photoUrl} size={240} style={styles.cardPhoto} />
+                ) : (
+                  <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}>
+                    <ThemedText style={styles.cardEmoji}>📍</ThemedText>
+                  </View>
+                )}
+                <View style={styles.cardContent}>
+                  <View style={styles.cardTitleRow}>
+                    <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+                      {item.locationName}
+                    </ThemedText>
+                    {/* Liste onSnapshot ile dinlendiği için silinen check-in kendiliğinden kaybolur. */}
+                    <DeleteCheckInButton checkIn={item} />
+                  </View>
+                  <ThemedText type="caption" themeColor="textSecondary">
+                    {formatDate(item.createdAt)}
+                  </ThemedText>
+                  {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
+                  {item.points ? <Tag label={`+${item.points} puan`} /> : null}
                 </View>
-              )}
-              <View style={styles.cardContent}>
-                <ThemedText type="defaultSemiBold">{item.locationName}</ThemedText>
-                <ThemedText type="caption" themeColor="textSecondary">
-                  {formatDate(item.createdAt)}
-                </ThemedText>
-                {item.note ? <ThemedText type="small">{item.note}</ThemedText> : null}
-                {item.points ? <Tag label={`+${item.points} puan`} /> : null}
-              </View>
-            </Card>
+              </Card>
+            </FadeInItem>
           )}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.emptyText}>
@@ -129,6 +147,7 @@ export default function RoutesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
+    ...ContentColumn,
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
@@ -140,6 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.four,
   },
   summaryBox: { flex: 1, alignItems: 'center', borderRadius: Radius.medium },
+  calendarButton: { marginBottom: Spacing.four },
   sectionTitle: { marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: { flexDirection: 'row', padding: 0, overflow: 'hidden' },
@@ -147,5 +167,7 @@ const styles = StyleSheet.create({
   cardEmoji: { fontSize: 28, lineHeight: 34 },
   cardPhoto: { width: 96, aspectRatio: undefined, height: '100%', minHeight: 96, borderRadius: 0 },
   cardContent: { flex: 1, padding: Spacing.three, gap: Spacing.one },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  cardTitle: { flex: 1 },
   emptyText: { textAlign: 'center', marginTop: Spacing.four },
 });

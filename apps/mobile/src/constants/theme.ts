@@ -3,57 +3,75 @@ import '@/global.css';
 import { Platform } from 'react-native';
 
 /**
- * Uygulamanın tek renk paleti — "İznik" yönü: çininin kobalt mavisi ana renk,
- * mercan kırmızısı ve çini yeşili vurgular. Ekranlar renkleri useTheme() ile okur;
- * bileşenlerde sabit renk (#...) yazılmaz.
+ * Uygulamanın tek renk paleti — "Pastel": krem zemin, adaçayı yeşili ana renk,
+ * pudra pembe vurgu ve eylem düğmeleri. Koyu modda sıcak kahve-siyah zemin.
+ * Ekranlar renkleri useTheme() ile okur; bileşenlerde sabit renk (#...) yazılmaz.
  */
 export const Colors = {
   light: {
-    text: '#0B1F5C',
-    textSecondary: '#56628A',
-    background: '#FFFFFF',
-    backgroundElement: '#EEF1FB',
-    backgroundSelected: '#D8DEF2',
-    border: '#D8DEF2',
-    placeholder: '#8A93B5',
+    text: '#3E3A39',
+    textSecondary: '#8A8380',
+    background: '#FBF6F1',
+    /** Kartların ve metin kutularının zemini (kremin üstünde beyaz). */
+    surface: '#FFFFFF',
+    backgroundElement: '#F3E9E2',
+    backgroundSelected: '#EADDD4',
+    border: '#F0E6DF',
+    placeholder: '#B3AAA5',
+    /** Kartların altındaki yumuşak pembe gölge. */
+    shadow: '#E8A3A1',
 
-    primary: '#1D3FB8',
+    primary: '#5F7D69',
     onPrimary: '#FFFFFF',
-    primarySoft: '#E6EBFA',
-    accent: '#2E9C8E',
-    accentSoft: '#DDF2EF',
-    highlight: '#C2372A',
-    highlightSoft: '#FCE5E1',
-    danger: '#B42318',
+    primarySoft: '#E6EEE8',
+    accent: '#7C9A86',
+    accentSoft: '#EEF3EF',
+    highlight: '#D9827F',
+    highlightSoft: '#FBE9E7',
+    /** Check-in gibi ana eylem düğmeleri: pudra pembe üstünde koyu yazı. */
+    cta: '#E8A3A1',
+    onCta: '#3E3A39',
+    danger: '#B4544B',
   },
   dark: {
-    text: '#EEF1FB',
-    textSecondary: '#A6B0D6',
-    background: '#0A1233',
-    backgroundElement: '#131D45',
-    backgroundSelected: '#1E2A5C',
-    border: '#24316A',
-    placeholder: '#6F7AA6',
+    text: '#F3EBE6',
+    textSecondary: '#ABA19C',
+    background: '#1C1817',
+    surface: '#262120',
+    backgroundElement: '#302A28',
+    backgroundSelected: '#3B3431',
+    border: '#352E2C',
+    placeholder: '#7D7471',
+    shadow: '#000000',
 
-    primary: '#5B78F0',
-    onPrimary: '#FFFFFF',
-    primarySoft: '#1B2759',
-    accent: '#4CC2B2',
-    accentSoft: '#12332F',
-    highlight: '#F0705F',
-    highlightSoft: '#3A1A17',
-    danger: '#F87171',
+    primary: '#A7C2AE',
+    onPrimary: '#1C1817',
+    primarySoft: '#2A322C',
+    accent: '#A7C2AE',
+    accentSoft: '#252C27',
+    highlight: '#EBA9A6',
+    highlightSoft: '#3A2927',
+    cta: '#EBA9A6',
+    onCta: '#1C1817',
+    danger: '#E58C80',
   },
 } as const;
 
-/** Fotoğrafın üzerine binen etiketler; fotoğraf her temada aynı göründüğü için sabit. */
+/** Fotoğrafın üzerine binen yazı ve etiketler; fotoğraf her temada aynı göründüğü için sabit. */
 export const OnPhoto = {
-  scrim: 'rgba(11, 31, 92, 0.72)',
+  scrim: 'rgba(40, 30, 28, 0.55)',
   text: '#FFFFFF',
+  textSoft: 'rgba(255, 255, 255, 0.85)',
+  rating: '#FFD9D4',
+  badge: 'rgba(255, 255, 255, 0.9)',
+  badgeText: '#5F7D69',
 } as const;
 
-/** Çini bordüründeki renk sırası (açık ve koyu temada aynı). */
-export const TileColors = ['#1D3FB8', '#C2372A', '#2E9C8E'] as const;
+/** Takvimdeki rotalar: ilk renk kullanıcının, diğerleri birlikte gösterilen kişilerin. */
+export const RouteColors = {
+  light: ['#D9827F', '#5F7D69', '#5E84B5', '#B98A2F'],
+  dark: ['#EBA9A6', '#A7C2AE', '#9DBDE6', '#E3C075'],
+} as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
@@ -93,20 +111,32 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const MaxContentWidth = 600;
 
-export const Radius = {
-  small: 6,
-  medium: 10,
-  large: 12,
-  /** Çipler ve etiketler; İznik yönünde tam yuvarlak yerine hafif köşeli. */
-  pill: 8,
+/**
+ * Ekran içeriğini en fazla MaxContentWidth genişlikte ortalar. Telefonda etkisizdir;
+ * web ve tablette fotoğrafların ve kartların pencere boyunca devleşmesini önler.
+ */
+export const ContentColumn = {
+  width: '100%',
+  maxWidth: MaxContentWidth,
+  alignSelf: 'center',
 } as const;
 
-/** Manrope ağırlıkları; yüklenmeleri app/_layout.tsx'te. */
-export const ManropeFamily = {
-  500: 'Manrope_500Medium',
-  600: 'Manrope_600SemiBold',
-  700: 'Manrope_700Bold',
-  800: 'Manrope_800ExtraBold',
+export const Radius = {
+  small: 12,
+  medium: 18,
+  large: 24,
+  pill: 999,
+} as const;
+
+/** Başlıklar için yumuşak hatlı serif (Lora); yüklenmesi app/_layout.tsx'te. */
+export const DisplayFamily = 'Lora_600SemiBold';
+
+/** Gövde yazısı Nunito'nun ağırlıkları; yüklenmeleri app/_layout.tsx'te. */
+export const BodyFamily = {
+  500: 'Nunito_500Medium',
+  600: 'Nunito_600SemiBold',
+  700: 'Nunito_700Bold',
+  800: 'Nunito_800ExtraBold',
 } as const;

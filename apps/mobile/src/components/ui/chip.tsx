@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Seçilebilir hap şeklinde düğme (filtreler, sekmeler). */
+/** Seçilebilir sekme/filtre: yuvarlak hap; seçili olan adaçayı yeşili zemin üstünde beyaz yazıyla. */
 export function Chip({
   label,
   selected,
@@ -21,16 +21,16 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[
+      hitSlop={6}
+      style={({ pressed }) => [
         styles.chip,
-        selected
-          ? { backgroundColor: theme.primary, borderColor: theme.primary }
-          : { borderColor: theme.border },
+        { backgroundColor: selected ? theme.primary : theme.backgroundElement },
+        pressed && styles.pressed,
       ]}
     >
       <ThemedText
         type={selected ? 'smallBold' : 'small'}
-        style={{ color: selected ? theme.onPrimary : theme.text }}
+        style={{ color: selected ? theme.onPrimary : theme.textSecondary }}
       >
         {label}
       </ThemedText>
@@ -40,9 +40,9 @@ export function Chip({
 
 const styles = StyleSheet.create({
   chip: {
-    borderWidth: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     borderRadius: Radius.pill,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
   },
+  pressed: { opacity: 0.75 },
 });

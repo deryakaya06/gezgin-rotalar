@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
-import { ManropeFamily, Radius } from '@/constants/theme';
+import { BodyFamily, Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Temaya uyan metin kutusu; karanlık modda da okunur. */
@@ -12,7 +12,7 @@ export function TextField({ style, ...rest }: TextInputProps) {
       selectionColor={theme.primary}
       style={[
         styles.input,
-        { borderColor: theme.border, color: theme.text, backgroundColor: theme.background },
+        { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface },
         style,
       ]}
       {...rest}
@@ -22,11 +22,11 @@ export function TextField({ style, ...rest }: TextInputProps) {
 
 const styles = StyleSheet.create({
   input: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.medium,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily: ManropeFamily[500],
+    fontFamily: BodyFamily[500],
   },
 });
