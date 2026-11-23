@@ -579,3 +579,120 @@ describe('check-in silme', () => {
     assert.equal((await profileOf(bob)).totalPoints, 0);
   });
 });
+
+describe('gezi planları', () => {
+  const trip = (uid, overrides = {}) => ({
+    userId: uid,
+    title: 'Boğaz turu',
+    date: '2026-12-05',
+    locationIds: ['galata'],
+    locationNames: ['Galata Kulesi'],
+    note: '',
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+
+  test('sahibi plan oluşturur, okur ve siler; başkası okuyamaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const ref = doc(collection(bob.db, 'planned_trips'));
+    await setDoc(ref, trip(bob.uid));
+    assert.equal((await getDoc(ref)).data().title, 'Boğaz turu');
+    await assert.rejects(getDoc(doc(alice.db, 'planned_trips', ref.id)));
+    await assert.rejects(writeBatch(alice.db).delete(doc(alice.db, 'planned_trips', ref.id)).commit());
+    await writeBatch(bob.db).delete(ref).commit();
+  });
+
+  test('başkası adına veya geçersiz plan reddedilir', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const ref = () => doc(collection(bob.db, 'planned_trips'));
+    await assert.rejects(setDoc(ref(), trip(alice.uid)));
+    await assert.rejects(setDoc(ref(), trip(bob.uid, { title: 'x' })));
+    await assert.rejects(setDoc(ref(), trip(bob.uid, { date: '5 Aralık' })));
+    await assert.rejects(setDoc(ref(), trip(bob.uid, { locationIds: [], locationNames: [] })));
+    await assert.rejects(setDoc(ref(), trip(bob.uid, { locationNames: [] })));
+    await assert.rejects(setDoc(ref(), trip(bob.uid, { role: 'admin' })));
+  });
+});
+
+describe('şikâyet ve moderasyon', () => {
+  const report = (reporter, checkInId, overrides = {}) => ({
+    reporterId: reporter.uid,
+    checkInId,
+    reason: 'spam',
+    createdAt: serverTimestamp(),
+    ...overrides,
+  });
+  const reportRef = (user, checkInId) => doc(user.db, 'reports', `${checkInId}_${user.uid}`);
+
+  async function newAdmin() {
+    const admin = await newUser('admin');
+    await adminSet(`users/${admin.uid}`, {
+      displayName: 'admin', accountType: 'friends', totalPoints: 0, visitCount: 0, role: 'admin',
+    });
+    return admin;
+  }
+
+  /** apps/web/src/lib/moderation.ts removeCheckIn ile aynı batch. */
+  function removeBatch(actor, ownerUid, checkInId, points, reportIds = []) {
+    const batch = writeBatch(actor.db);
+    batch.delete(doc(actor.db, 'check_ins', checkInId));
+    batch.update(doc(actor.db, 'users', ownerUid), {
+      totalPoints: increment(-points),
+      visitCount: increment(-1),
+      lastDeletedCheckInId: checkInId,
+    });
+    for (const id of reportIds) batch.delete(doc(actor.db, 'reports', id));
+    return batch.commit();
+  }
+
+  test('kullanıcı başkasının paylaşımını bir kez şikâyet edebilir, kendininkini edemez', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await setDoc(reportRef(alice, lastCheckInId), report(alice, lastCheckInId));
+    await assert.rejects(setDoc(reportRef(alice, lastCheckInId), report(alice, lastCheckInId)), 'ikinci şikâyet');
+    await assert.rejects(setDoc(reportRef(bob, lastCheckInId), report(bob, lastCheckInId)), 'kendi paylaşımı');
+  });
+
+  test('geçersiz şikâyet reddedilir, şikâyetleri normal kullanıcı okuyamaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(setDoc(reportRef(alice, lastCheckInId), report(alice, lastCheckInId, { reason: 'yok' })));
+    await assert.rejects(setDoc(reportRef(alice, 'olmayan'), report(alice, 'olmayan')));
+    await assert.rejects(setDoc(doc(alice.db, 'reports', 'rastgele'), report(alice, lastCheckInId)));
+    await setDoc(reportRef(alice, lastCheckInId), report(alice, lastCheckInId));
+    await assert.rejects(getDoc(reportRef(alice, lastCheckInId)));
+    await assert.rejects(getDocs(collection(alice.db, 'reports')));
+  });
+
+  test('admin paylaşımı kaldırınca sahibinin puanı geri alınır ve şikâyet kapanır', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const admin = await newAdmin();
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await setDoc(reportRef(alice, lastCheckInId), report(alice, lastCheckInId));
+    assert.ok((await getDocs(collection(admin.db, 'reports'))).size >= 1);
+
+    await removeBatch(admin, bob.uid, lastCheckInId, POINTS, [`${lastCheckInId}_${alice.uid}`]);
+    const after = await profileOf(bob);
+    assert.equal(after.totalPoints, 0);
+    assert.equal(after.visitCount, 0);
+    assert.equal((await getDoc(doc(admin.db, 'reports', `${lastCheckInId}_${alice.uid}`))).exists(), false);
+  });
+
+  test('admin puanı yanlış düşüremez, normal kullanıcı başkasının paylaşımını kaldıramaz', async () => {
+    const bob = await newUser('bob');
+    const alice = await newUser('alice');
+    const admin = await newAdmin();
+    await checkInBatch(bob);
+    const { lastCheckInId } = await profileOf(bob);
+    await assert.rejects(removeBatch(admin, bob.uid, lastCheckInId, POINTS + 5));
+    await assert.rejects(removeBatch(alice, bob.uid, lastCheckInId, POINTS));
+  });
+});

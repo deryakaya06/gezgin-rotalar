@@ -17,5 +17,8 @@
   flex-wrap: wrap;
 }
 .brand { font-weight: 600; text-decoration: none; }
+.nav { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.9rem; font-weight: 500; }
+.nav a { text-decoration: none; color: var(--muted); }
+.nav a:hover { color: var(--ink); text-decoration: underline; }
 .user { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
 .center { max-width: 520px; text-align: left; }

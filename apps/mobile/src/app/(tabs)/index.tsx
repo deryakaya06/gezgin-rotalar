@@ -20,6 +20,7 @@ import { Avatar } from '@/components/avatar';
 import { CheckInPhoto } from '@/components/check-in-photo';
 import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { LikeButton } from '@/components/like-button';
+import { ReportCheckInButton } from '@/components/report-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui/card';
@@ -246,6 +247,7 @@ export default function HomeScreen() {
                     checkIn={item}
                     onDeleted={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
                   />
+                  <ReportCheckInButton checkIn={item} />
                 </View>
 
                 <Tag label={item.locationName} tone="accent" />

@@ -43,6 +43,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <Link href="/" className={styles.brand}>
             Gezgin Rotalar <span className="muted">· Yönetim</span>
           </Link>
+          <nav className={styles.nav} aria-label="Yönetim bölümleri">
+            <Link href="/">Mekanlar</Link>
+            <Link href="/reports">Şikâyetler</Link>
+            <Link href="/sponsors">Sponsor İstatistikleri</Link>
+          </nav>
           <div className={styles.user}>
             <span className="muted">{state.displayName}</span>
             <button className="btn" onClick={() => logout()}>

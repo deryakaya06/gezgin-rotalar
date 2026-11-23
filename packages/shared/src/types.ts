@@ -82,4 +82,26 @@ export type CheckIn = {
   createdAt: FirestoreTimestamp | null;
 };
 
+/** planned_trips/{id} — yalnızca sahibi görür. date "2026-11-23" biçiminde. */
+export type PlannedTrip = {
+  userId: string;
+  title: string;
+  date: string;
+  /** Duraklar gidiş sırasında. */
+  locationIds: string[];
+  locationNames: string[];
+  note: string;
+  createdAt: FirestoreTimestamp | null;
+};
+
+export type ReportReason = 'spam' | 'inappropriate' | 'fake' | 'other';
+
+/** reports/{checkInId}_{reporterId} — kişi başına bir şikâyet; yalnızca admin okur. */
+export type Report = {
+  reporterId: string;
+  checkInId: string;
+  reason: ReportReason;
+  createdAt: FirestoreTimestamp | null;
+};
+
 export type WithId<T> = T & { id: string };

@@ -174,7 +174,9 @@ service cloud.firestore {
         isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['searchName'])
         && validSearchName(request.resource.data)
-      );
+      )
+      // Admin, şikâyet edilen check-in'i kaldırırken sahibinin puanını geri alır.
+      || (isAdmin() && isCheckInDeletionUpdate(uid));
 
       allow delete: if false;
 
@@ -224,6 +226,47 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Gezi planları özeldir; yalnızca sahibi görür, oluşturur ve siler.
+    match /planned_trips/{tripId} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'userId', 'title', 'date', 'locationIds', 'locationNames', 'note', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'userId', 'title', 'date', 'locationIds', 'locationNames', 'note', 'createdAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 2
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && request.resource.data.locationIds is list
+        && request.resource.data.locationIds.size() >= 1
+        && request.resource.data.locationIds.size() <= 10
+        && request.resource.data.locationNames is list
+        && request.resource.data.locationNames.size() == request.resource.data.locationIds.size()
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 500
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // Kişi bir paylaşımı bir kez şikâyet eder (id: checkInId_uid); şikâyetleri yalnızca admin görür.
+    match /reports/{reportId} {
+      allow read, delete: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['reporterId', 'checkInId', 'reason', 'createdAt'])
+        && request.resource.data.keys().hasAll(['reporterId', 'checkInId', 'reason', 'createdAt'])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.checkInId is string
+        && reportId == request.resource.data.checkInId + '_' + request.auth.uid
+        && request.resource.data.reason in ['spam', 'inappropriate', 'fake', 'other']
+        && request.resource.data.createdAt == request.time
+        && exists(checkInPath(request.resource.data.checkInId))
+        && get(checkInPath(request.resource.data.checkInId)).data.userId != request.auth.uid;
+    }
+
     match /check_ins/{checkInId} {
       allow read: if signedIn();
 
@@ -268,11 +311,11 @@ service cloud.firestore {
           )
         );
 
-      // Sahibi silebilir; aynı batch'te puanı ve ziyaret sayısı geri alınmalıdır
-      // (users kuralındaki isCheckInDeletionUpdate).
+      // Sahibi veya admin silebilir; aynı batch'te sahibinin puanı ve ziyaret sayısı
+      // geri alınmalıdır (users kuralındaki isCheckInDeletionUpdate).
       allow delete: if signedIn()
-        && resource.data.userId == request.auth.uid
-        && getAfter(userPath(request.auth.uid)).data.get('lastDeletedCheckInId', '') == checkInId;
+        && (resource.data.userId == request.auth.uid || isAdmin())
+        && getAfter(userPath(resource.data.userId)).data.get('lastDeletedCheckInId', '') == checkInId;
 
       // check_ins/{id}/likes/{uid}: kullanıcı yalnızca kendi beğenisini ekler/siler;
       // sayaç aynı batch'te güncellenmelidir.

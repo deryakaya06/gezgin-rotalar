@@ -1,0 +1,14 @@
+.list { display: grid; gap: 12px; }
+.item { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; padding: 12px; align-items: start; }
+.photo { display: block; width: 96px; height: 96px; border-radius: 8px; object-fit: cover; }
+.noPhoto { background: var(--surface-2); }
+.body { display: grid; gap: 4px; min-width: 0; }
+.body p { margin: 0; font-size: 0.88rem; }
+.note { overflow-wrap: anywhere; }
+.reasons { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.actions { display: grid; gap: 6px; }
+@media (max-width: 640px) {
+  .item { grid-template-columns: 72px minmax(0, 1fr); }
+  .photo { width: 72px; height: 72px; }
+  .actions { grid-column: 1 / -1; grid-auto-flow: column; }
+}

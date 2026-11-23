@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -29,6 +29,7 @@ import { Tag } from '@/components/ui/tag';
 import { TextField } from '@/components/ui/text-field';
 import { ContentColumn, OnPhoto, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
+import { useScrollToInput } from '@/hooks/use-scroll-to-input';
 import { useTheme } from '@/hooks/use-theme';
 import { createCheckIn } from '@/services/checkins';
 import { directionsUrl, fetchLocation } from '@/services/locations';
@@ -43,6 +44,7 @@ export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const theme = useTheme();
+  const { scrollRef, inputProps } = useScrollToInput();
 
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -139,7 +141,11 @@ export default function LocationDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={hasCover ? ['left', 'right', 'bottom'] : undefined}>
+        {/* iOS'ta klavye boşluğunu ScrollView kendisi ayarlar; ikisi birlikte çakışır. */}
+        <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === 'android' ? 'padding' : undefined}>
         <Animated.ScrollView
+          ref={scrollRef}
+          automaticallyAdjustKeyboardInsets
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
@@ -243,6 +249,7 @@ export default function LocationDetailScreen() {
                 onChangeText={setNote}
                 maxLength={500}
                 multiline
+                {...inputProps}
               />
               <Button
                 title={
@@ -263,6 +270,7 @@ export default function LocationDetailScreen() {
             </View>
           </View>
         </Animated.ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -273,6 +281,7 @@ const HERO_HEIGHT = 340;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { ...ContentColumn, flex: 1 },
+  keyboard: { flex: 1 },
   content: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

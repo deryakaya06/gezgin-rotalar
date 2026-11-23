@@ -1,9 +1,22 @@
-import { collection, doc, getDoc, increment, serverTimestamp, writeBatch } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  increment,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
 import {
   COLLECTIONS,
   DUPLICATE_CHECKIN_WINDOW_HOURS,
   POINTS_PER_CHECKIN,
+  type CheckIn,
   type Visit,
+  type WithId,
 } from '@repo/shared';
 
 import { db } from '@/firebase';
@@ -65,4 +78,19 @@ export function deleteCheckIn(uid: string, checkIn: { id: string; points?: numbe
     lastDeletedCheckInId: checkIn.id,
   });
   return batch.commit();
+}
+
+/** Bir kullanıcının verilen gündeki ("2026-11-23", cihaz saatine göre) check-in'leri. */
+export async function fetchDayCheckIns(uid: string, day: string): Promise<WithId<CheckIn>[]> {
+  const [year, month, date] = day.split('-').map(Number);
+  const snapshot = await getDocs(
+    query(
+      collection(db, COLLECTIONS.checkIns),
+      where('userId', '==', uid),
+      where('createdAt', '>=', new Date(year, month - 1, date)),
+      where('createdAt', '<', new Date(year, month - 1, date + 1)),
+      orderBy('createdAt', 'desc')
+    )
+  );
+  return snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as CheckIn) }));
 }

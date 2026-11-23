@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   collection,
   onSnapshot,
@@ -14,6 +15,7 @@ import { CheckInPhoto } from '@/components/check-in-photo';
 import { DeleteCheckInButton } from '@/components/delete-check-in-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FadeInItem } from '@/components/ui/motion';
 import { Tag } from '@/components/ui/tag';
@@ -26,6 +28,7 @@ import { formatDate } from '@/utils/format';
 export default function RoutesScreen() {
   const { user } = useAuth();
   const theme = useTheme();
+  const router = useRouter();
   const [checkIns, setCheckIns] = useState<WithId<CheckIn>[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,6 +92,13 @@ export default function RoutesScreen() {
                 </Card>
               </View>
 
+              <Button
+                title="Takvimim ve Gün Rotaları"
+                variant="outline"
+                onPress={() => router.push('/calendar')}
+                style={styles.calendarButton}
+              />
+
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
                 {"Geçmiş Check-in'ler"}
               </ThemedText>
@@ -149,6 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.four,
   },
   summaryBox: { flex: 1, alignItems: 'center', borderRadius: Radius.medium },
+  calendarButton: { marginBottom: Spacing.four },
   sectionTitle: { marginBottom: Spacing.three },
   list: { gap: Spacing.three, paddingBottom: Spacing.four },
   card: { flexDirection: 'row', padding: 0, overflow: 'hidden' },

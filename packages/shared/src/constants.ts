@@ -13,6 +13,17 @@ export const POINTS_PER_CHECKIN = 10;
 /** Aynı mekana bu süre içinde yapılan ikinci check-in puan kazandırmaz (firestore.rules uygular). */
 export const DUPLICATE_CHECKIN_WINDOW_HOURS = 24;
 
+/** Şikâyet nedenleri; anahtarlar firestore.rules içindeki listeyle aynı olmalı. */
+export const REPORT_REASONS = {
+  spam: 'Spam',
+  inappropriate: 'Uygunsuz içerik',
+  fake: 'Yanıltıcı veya sahte',
+  other: 'Diğer',
+} as const;
+
+/** Bir gezi planındaki en fazla durak; firestore.rules aynı sınırı uygular. */
+export const MAX_TRIP_STOPS = 10;
+
 /**
  * Check-in fotoğrafları Cloudinary'de tutulur (Firebase Storage Spark planında yok).
  * İkisi de gizli değildir: imzasız yükleme ayarı istemcide bulunmak zorundadır.

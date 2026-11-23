@@ -82,6 +82,8 @@ function RootNavigator() {
           <Stack.Screen name="user/[id]" />
           <Stack.Screen name="search" />
           <Stack.Screen name="follows" />
+          <Stack.Screen name="calendar" />
+          <Stack.Screen name="plan-trip" />
         </Stack.Protected>
 
         <Stack.Protected guard={!user}>

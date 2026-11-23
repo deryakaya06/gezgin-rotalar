@@ -67,6 +67,12 @@ export const OnPhoto = {
   badgeText: '#5F7D69',
 } as const;
 
+/** Takvimdeki rotalar: ilk renk kullanıcının, diğerleri birlikte gösterilen kişilerin. */
+export const RouteColors = {
+  light: ['#D9827F', '#5F7D69', '#5E84B5', '#B98A2F'],
+  dark: ['#EBA9A6', '#A7C2AE', '#9DBDE6', '#E3C075'],
+} as const;
+
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
